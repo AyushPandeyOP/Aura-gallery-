@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode Builder V3) 💀
+name: Aura Gallery (God Mode Builder V4) 💀
 
 on:
   push:
@@ -16,10 +16,16 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Trick the System (Generate Wrapper FIRST 🛑)
+      - name: The Ultimate Dummy Trick (Bypass System Gradle) 🧠
         run: |
-          # Khaali repo me pehle wrapper 8.4 set kar rahe hain taaki 9.6.1 crash na kare
+          # 1. Nakli khali file banai taaki Gradle ko lage project hai
+          touch settings.gradle
+          
+          # 2. Ab wrapper banayenge (Ye crash nahi hoga kiyuki file khali hai)
           gradle wrapper --gradle-version 8.4
+          
+          # 3. Wrapper banne ke baad us nakli file ko uda diya
+          rm settings.gradle
 
       - name: Build Android Project from Scratch 🪄
         run: |
@@ -83,7 +89,6 @@ jobs:
 
       - name: Compile and Build APK (The Engine)
         run: |
-          # Ab system wala gradle nahi, apna 8.4 wala local gradlew use hoga
           ./gradlew assembleDebug --stacktrace
 
       - name: Upload Final APK (Download from here)
