@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode Builder V4) 💀
+name: Aura Gallery (God Mode Builder V5) 💀
 
 on:
   push:
@@ -18,26 +18,24 @@ jobs:
 
       - name: The Ultimate Dummy Trick (Bypass System Gradle) 🧠
         run: |
-          # 1. Nakli khali file banai taaki Gradle ko lage project hai
           touch settings.gradle
-          
-          # 2. Ab wrapper banayenge (Ye crash nahi hoga kiyuki file khali hai)
           gradle wrapper --gradle-version 8.4
-          
-          # 3. Wrapper banne ke baad us nakli file ko uda diya
           rm settings.gradle
 
       - name: Build Android Project from Scratch 🪄
         run: |
           mkdir -p app/src/main/java/com/aura/gallery
 
-          # Auto-generating config files
           echo 'pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }; dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }; rootProject.name = "Aura Gallery"; include(":app")' > settings.gradle.kts
-          echo 'plugins { id("com.android.application") version "8.2.0" apply false; id("org.jetbrains.kotlin.android") version "1.9.0" apply false }' > build.gradle.kts
-          echo 'plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }; android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "1.0" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.1" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }; dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("dev.chrisbanes.haze:haze:0.6.0") }' > app/build.gradle.kts
+          
+          # Upgraded AGP and Kotlin versions
+          echo 'plugins { id("com.android.application") version "8.2.2" apply false; id("org.jetbrains.kotlin.android") version "1.9.22" apply false }' > build.gradle.kts
+          
+          # Upgraded Kotlin Compiler Extension
+          echo 'plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }; android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "1.0" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.9" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }; dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("dev.chrisbanes.haze:haze:0.6.0") }' > app/build.gradle.kts
+          
           echo '<?xml version="1.0" encoding="utf-8"?><manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:allowBackup="true" android:label="Aura Gallery" android:supportsRtl="true" android:theme="@android:style/Theme.DeviceDefault.NoActionBar"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter></activity></application></manifest>' > app/src/main/AndroidManifest.xml
 
-          # Auto-generating tera Liquid Blur Code
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           package com.aura.gallery
           import android.os.Bundle
