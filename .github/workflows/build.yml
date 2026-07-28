@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode testing Builder) 💀
+name: Aura Gallery (God Mode Builder V3) 💀
 
 on:
   push:
@@ -15,6 +15,11 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+
+      - name: Trick the System (Generate Wrapper FIRST 🛑)
+        run: |
+          # Khaali repo me pehle wrapper 8.4 set kar rahe hain taaki 9.6.1 crash na kare
+          gradle wrapper --gradle-version 8.4
 
       - name: Build Android Project from Scratch 🪄
         run: |
@@ -78,8 +83,7 @@ jobs:
 
       - name: Compile and Build APK (The Engine)
         run: |
-          # Yaha magic fix apply kiya hai (Version 8.4 pinned)
-          gradle wrapper --gradle-version 8.4
+          # Ab system wala gradle nahi, apna 8.4 wala local gradlew use hoga
           ./gradlew assembleDebug --stacktrace
 
       - name: Upload Final APK (Download from here)
