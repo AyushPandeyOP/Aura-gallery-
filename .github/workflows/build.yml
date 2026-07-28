@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode V7) 💀🔥
+name: Aura Gallery (God Mode V8) 💀🔥
 
 on:
   push:
@@ -21,93 +21,35 @@ jobs:
           mkdir -p app/src/main/java/com/aura/gallery
           mkdir -p app/src/main/res/values
 
-          # 1. THE MISSING LINK (AndroidX Enable)
+          # The Missing Link (AndroidX)
           cat << 'EOF' > gradle.properties
           android.useAndroidX=true
           android.nonTransitiveRClass=true
           org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
           EOF
 
-          # 2. Settings Config
           cat << 'EOF' > settings.gradle.kts
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
           rootProject.name = "Aura Gallery"
           include(":app")
           EOF
 
-          # 3. Root Build Config
           cat << 'EOF' > build.gradle.kts
-          plugins {
-              id("com.android.application") version "8.3.2" apply false
-              id("org.jetbrains.kotlin.android") version "1.9.23" apply false
-          }
+          plugins { id("com.android.application") version "8.3.2" apply false; id("org.jetbrains.kotlin.android") version "1.9.23" apply false }
           EOF
 
-          # 4. App Build Config
           cat << 'EOF' > app/build.gradle.kts
-          plugins {
-              id("com.android.application")
-              id("org.jetbrains.kotlin.android")
-          }
-          android {
-              namespace = "com.aura.gallery"
-              compileSdk = 34
-              defaultConfig {
-                  applicationId = "com.aura.gallery"
-                  minSdk = 31
-                  targetSdk = 34
-                  versionCode = 1
-                  versionName = "1.0"
-              }
-              buildFeatures {
-                  compose = true
-              }
-              composeOptions {
-                  kotlinCompilerExtensionVersion = "1.5.11"
-              }
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
-              kotlinOptions {
-                  jvmTarget = "17"
-              }
-          }
-          dependencies {
-              implementation("androidx.core:core-ktx:1.12.0")
-              implementation("androidx.activity:activity-compose:1.8.2")
-              implementation(platform("androidx.compose:compose-bom:2024.02.00"))
-              implementation("androidx.compose.ui:ui")
-              implementation("androidx.compose.material3:material3")
-              implementation("dev.chrisbanes.haze:haze:0.6.0")
-          }
+          plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
+          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "1.0" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
+          dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("dev.chrisbanes.haze:haze:0.6.0") }
           EOF
 
-          # 5. Manifest
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <application
-                  android:allowBackup="true"
-                  android:label="Aura Gallery"
-                  android:supportsRtl="true"
-                  android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true">
+              <application android:allowBackup="true" android:label="Aura Gallery" android:supportsRtl="true" android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+                  <activity android:name=".MainActivity" android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
@@ -117,26 +59,23 @@ jobs:
           </manifest>
           EOF
 
-          # 6. Strings
           cat << 'EOF' > app/src/main/res/values/strings.xml
-          <resources>
-              <string name="app_name">Aura Gallery</string>
-          </resources>
+          <resources><string name="app_name">Aura Gallery</string></resources>
           EOF
 
-          # 7. Liquid Glass Engine (Main Code)
+          # The Perfected Main Code (Syntax errors fixed!)
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           package com.aura.gallery
+          
           import android.os.Bundle
           import androidx.activity.ComponentActivity
           import androidx.activity.compose.setContent
           import androidx.compose.foundation.background
           import androidx.compose.foundation.layout.*
-          import androidx.compose.foundation.lazy.grid.GridCells
-          import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+          import androidx.compose.foundation.lazy.grid.*
           import androidx.compose.foundation.shape.RoundedCornerShape
           import androidx.compose.material.icons.Icons
-          import androidx.compose.material.icons.filled.Image
+          import androidx.compose.material.icons.filled.Home
           import androidx.compose.material.icons.filled.Lock
           import androidx.compose.material.icons.filled.Settings
           import androidx.compose.material3.Icon
@@ -158,12 +97,29 @@ jobs:
                   setContent {
                       val hazeState = remember { HazeState() }
                       Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-                          LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(bottom = 90.dp)) {
-                              items(100) { Box(modifier = Modifier.aspectRatio(1f).padding(1.dp).background(Color.DarkGray)) }
+                          LazyVerticalGrid(
+                              columns = GridCells.Fixed(3), 
+                              modifier = Modifier.fillMaxSize().haze(state = hazeState), 
+                              contentPadding = PaddingValues(bottom = 90.dp)
+                          ) {
+                              items(100) { 
+                                  Box(modifier = Modifier.aspectRatio(1f).padding(1.dp).background(Color.DarkGray)) 
+                              }
                           }
-                          Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp, start = 24.dp, end = 24.dp).fillMaxWidth().height(70.dp).hazeChild(state = hazeState, shape = RoundedCornerShape(35.dp), style = HazeStyle(tint = Color.White.copy(alpha = 0.15f), blurRadius = 30.dp, noiseFactor = 0.05f))) {
+                          Box(
+                              modifier = Modifier
+                                  .align(Alignment.BottomCenter)
+                                  .padding(bottom = 24.dp, start = 24.dp, end = 24.dp)
+                                  .fillMaxWidth()
+                                  .height(70.dp)
+                                  .hazeChild(
+                                      state = hazeState, 
+                                      shape = RoundedCornerShape(35.dp), 
+                                      style = HazeStyle(tint = Color.White.copy(alpha = 0.15f), blurRadius = 30.dp, noiseFactor = 0.05f)
+                                  )
+                          ) {
                               Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                                  IconButton(onClick = {}) { Icon(Icons.Default.Image, contentDescription = "Photos", tint = Color.White) }
+                                  IconButton(onClick = {}) { Icon(Icons.Default.Home, contentDescription = "Photos", tint = Color.White) }
                                   IconButton(onClick = {}) { Icon(Icons.Default.Lock, contentDescription = "Vault", tint = Color.White) }
                                   IconButton(onClick = {}) { Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White) }
                               }
@@ -178,7 +134,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.7'
-          # CRITICAL: Purana kharab cache use nahi karega ye ab!
           cache-disabled: true 
 
       - name: Compile and Build APK (The Engine)
