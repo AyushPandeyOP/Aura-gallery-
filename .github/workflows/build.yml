@@ -78,7 +78,8 @@ jobs:
 
       - name: Compile and Build APK (The Engine)
         run: |
-          gradle wrapper
+          # Yaha magic fix apply kiya hai (Version 8.4 pinned)
+          gradle wrapper --gradle-version 8.4
           ./gradlew assembleDebug --stacktrace
 
       - name: Upload Final APK (Download from here)
