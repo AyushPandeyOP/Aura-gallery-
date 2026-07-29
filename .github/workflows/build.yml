@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode beta V10 - The Monster Build) 💀🔥
+name: Aura Gallery (God Mode V11 - Super Edition) 💀🔥
 
 on:
   push:
@@ -64,7 +64,7 @@ jobs:
           <resources><string name="app_name">Aura Gallery</string></resources>
           EOF
 
-          # The Ultimate Monster Engine (Settings + Gestures + Liquid Glass)
+          # V11 MONSTER ENGINE CODE
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           package com.aura.gallery
           import android.Manifest
@@ -73,10 +73,11 @@ jobs:
           import android.os.Bundle
           import android.provider.MediaStore
           import androidx.activity.ComponentActivity
+          import androidx.activity.compose.BackHandler
           import androidx.activity.compose.setContent
           import androidx.activity.compose.rememberLauncherForActivityResult
           import androidx.activity.result.contract.ActivityResultContracts
-          import androidx.compose.animation.core.animateFloatAsState
+          import androidx.compose.animation.core.*
           import androidx.compose.foundation.background
           import androidx.compose.foundation.clickable
           import androidx.compose.foundation.gestures.detectDragGestures
@@ -92,16 +93,20 @@ jobs:
           import androidx.compose.ui.Alignment
           import androidx.compose.ui.Modifier
           import androidx.compose.ui.draw.scale
+          import androidx.compose.ui.draw.shadow
           import androidx.compose.ui.graphics.Color
+          import androidx.compose.ui.graphics.Shadow
           import androidx.compose.ui.hapticfeedback.HapticFeedbackType
           import androidx.compose.ui.input.pointer.pointerInput
           import androidx.compose.ui.layout.ContentScale
           import androidx.compose.ui.platform.LocalContext
           import androidx.compose.ui.platform.LocalHapticFeedback
+          import androidx.compose.ui.text.TextStyle
           import androidx.compose.ui.text.font.FontWeight
           import androidx.compose.ui.unit.IntOffset
           import androidx.compose.ui.unit.dp
           import androidx.compose.ui.unit.sp
+          import androidx.core.view.WindowCompat
           import coil.compose.AsyncImage
           import dev.chrisbanes.haze.HazeState
           import dev.chrisbanes.haze.haze
@@ -114,16 +119,26 @@ jobs:
           class MainActivity : ComponentActivity() {
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
+                  
+                  // Make app edge-to-edge (Premium Flagship Feel)
+                  WindowCompat.setDecorFitsSystemWindows(window, false)
+
                   setContent {
                       val context = LocalContext.current
                       val haptic = LocalHapticFeedback.current
                       
-                      // App State Management
                       var photos by remember { mutableStateOf<List<String>>(emptyList()) }
                       var hasPermission by remember { mutableStateOf(false) }
-                      var activeScreen by remember { mutableStateOf("GALLERY") } // GALLERY, PHOTO, SETTINGS
+                      var activeScreen by remember { mutableStateOf("GALLERY") } 
                       var selectedPhotoUri by remember { mutableStateOf("") }
-                      var blurRadiusValue by remember { mutableStateOf(30f) }
+                      var blurRadiusValue by remember { mutableStateOf(40f) }
+
+                      // Smart Back Handler Fix
+                      if (activeScreen != "GALLERY") {
+                          BackHandler {
+                              activeScreen = "GALLERY"
+                          }
+                      }
 
                       val permissionLauncher = rememberLauncherForActivityResult(
                           ActivityResultContracts.RequestPermission()
@@ -158,9 +173,8 @@ jobs:
 
                       val hazeState = remember { HazeState() }
                       
-                      Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A0A))) {
+                      Box(modifier = Modifier.fillMaxSize().background(Color(0xFF050505))) {
                           
-                          // 1. GALLERY SCREEN
                           if (activeScreen == "GALLERY") {
                               if (photos.isEmpty() && hasPermission) {
                                   CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
@@ -168,7 +182,8 @@ jobs:
                                   LazyVerticalGrid(
                                       columns = GridCells.Fixed(4),
                                       modifier = Modifier.fillMaxSize().haze(state = hazeState),
-                                      contentPadding = PaddingValues(bottom = 90.dp)
+                                      // Added top padding for status bar, bottom for floating bar
+                                      contentPadding = PaddingValues(top = 40.dp, bottom = 120.dp)
                                   ) {
                                       items(photos) { uri ->
                                           AsyncImage(
@@ -184,15 +199,13 @@ jobs:
                               }
                           }
 
-                          // 2. SETTINGS SCREEN
                           if (activeScreen == "SETTINGS") {
                               Column(
-                                  modifier = Modifier.fillMaxSize().haze(state = hazeState).padding(24.dp),
+                                  modifier = Modifier.fillMaxSize().haze(state = hazeState).padding(24.dp).padding(top = 40.dp),
                                   horizontalAlignment = Alignment.CenterHorizontally
                               ) {
-                                  Spacer(modifier = Modifier.height(40.dp))
                                   Text("AURA SETTINGS", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                                  Spacer(modifier = Modifier.height(40.dp))
+                                  Spacer(modifier = Modifier.height(50.dp))
                                   
                                   Text("Liquid Glass Blur Level: ${blurRadiusValue.toInt()}", color = Color.Gray)
                                   Slider(
@@ -202,24 +215,37 @@ jobs:
                                       colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White)
                                   )
                                   
-                                  Spacer(modifier = Modifier.height(30.dp))
-                                  Button(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) }, modifier = Modifier.fillMaxWidth().height(55.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E))) {
+                                  Spacer(modifier = Modifier.height(40.dp))
+                                  Button(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) }, modifier = Modifier.fillMaxWidth().height(55.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF151515))) {
                                       Text("Scan for Blurry Photos (AI Engine)", color = Color.White)
                                   }
                                   
                                   Spacer(modifier = Modifier.height(16.dp))
-                                  Button(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) }, modifier = Modifier.fillMaxWidth().height(55.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E))) {
+                                  Button(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) }, modifier = Modifier.fillMaxWidth().height(55.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF151515))) {
                                       Text("Setup Vault PIN", color = Color.White)
                                   }
                                   
                                   Spacer(modifier = Modifier.weight(1f))
-                                  // PANDEY JI MASTERSTROKE
-                                  Text("Developed By Pandey Ji 👑", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                                  Spacer(modifier = Modifier.height(90.dp))
+                                  
+                                  // THE PANDEY JI GLOW MASTERSTROKE 👑
+                                  val infiniteTransition = rememberInfiniteTransition(label = "glow")
+                                  val glowAlpha by infiniteTransition.animateFloat(
+                                      initialValue = 0.2f, targetValue = 1f,
+                                      animationSpec = infiniteRepeatable(tween(1500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+                                      label = "alpha"
+                                  )
+                                  Text(
+                                      text = "Developed By Pandey Ji 👑",
+                                      color = Color(0xFFFFD700).copy(alpha = glowAlpha), // Gold Color
+                                      style = TextStyle(shadow = Shadow(color = Color(0xFFFFD700), blurRadius = 30f * glowAlpha)),
+                                      fontSize = 18.sp,
+                                      fontWeight = FontWeight.ExtraBold,
+                                      letterSpacing = 1.sp
+                                  )
+                                  Spacer(modifier = Modifier.height(110.dp))
                               }
                           }
 
-                          // 3. FULL SCREEN PHOTO WITH SWIPE GESTURE
                           if (activeScreen == "PHOTO") {
                               var offsetY by remember { mutableStateOf(0f) }
                               val scale by animateFloatAsState(targetValue = if (offsetY > 50f) 0.85f else 1f, label = "scale")
@@ -240,9 +266,7 @@ jobs:
                                               },
                                               onDrag = { change, dragAmount ->
                                                   change.consume()
-                                                  if (dragAmount.y > 0 || offsetY > 0) { // Allow only downward swipe
-                                                      offsetY += dragAmount.y
-                                                  }
+                                                  if (dragAmount.y > 0 || offsetY > 0) offsetY += dragAmount.y
                                               }
                                           )
                                       },
@@ -252,25 +276,23 @@ jobs:
                                       model = selectedPhotoUri,
                                       contentDescription = "Full Screen",
                                       contentScale = ContentScale.Fit,
-                                      modifier = Modifier
-                                          .fillMaxSize()
-                                          .offset { IntOffset(0, offsetY.roundToInt()) }
-                                          .scale(scale)
+                                      modifier = Modifier.fillMaxSize().offset { IntOffset(0, offsetY.roundToInt()) }.scale(scale)
                                   )
                               }
                           }
 
-                          // 4. FLOATING LIQUID GLASS BAR (Hidden in Photo View)
+                          // THE KSU STYLE FLOATING BAR (Sleek, Shadowed & Floating)
                           if (activeScreen != "PHOTO") {
                               Box(
                                   modifier = Modifier
                                       .align(Alignment.BottomCenter)
-                                      .padding(bottom = 24.dp, start = 24.dp, end = 24.dp)
+                                      .padding(bottom = 36.dp, start = 50.dp, end = 50.dp) // Sleeker width
                                       .fillMaxWidth()
-                                      .height(70.dp)
+                                      .height(60.dp) // Sleeker height
+                                      .shadow(elevation = 15.dp, shape = RoundedCornerShape(30.dp), spotColor = Color.White.copy(alpha = 0.5f), ambientColor = Color.White.copy(alpha = 0.5f))
                                       .hazeChild(
                                           state = hazeState, 
-                                          shape = RoundedCornerShape(35.dp), 
+                                          shape = RoundedCornerShape(30.dp), 
                                           style = HazeStyle(tint = Color.White.copy(alpha = 0.15f), blurRadius = blurRadiusValue.dp, noiseFactor = 0.05f)
                                       )
                               ) {
