@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode V23 - Missing Import Fixed) 💀🔥
+name: Aura Gallery (God Mode V24 - The TRUE Fluid Pill) 💀🔥
 
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
 
           cat << 'EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
-          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "2.3" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
+          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "2.4" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
           dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("androidx.compose.foundation:foundation"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0"); implementation("androidx.media3:media3-exoplayer:1.2.1"); implementation("androidx.media3:media3-ui:1.2.1") }
           EOF
 
@@ -71,7 +71,7 @@ jobs:
           data class Media(val uri: String, val isVideo: Boolean)
           EOF
 
-          # FILE 2: UI Components (TopBar, Glowing Fluid Dock, Settings Hub)
+          # FILE 2: UI Components (Now with the REAL Glowing Fluid Pill) 💀
           cat << 'EOF' > app/src/main/java/com/aura/gallery/Components.kt
           @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
           package com.aura.gallery
@@ -158,19 +158,40 @@ jobs:
                   .shadow(20.dp, RoundedCornerShape(30.dp), spotColor = Color.White.copy(alpha=0.6f))
                   .hazeChild(hazeState, RoundedCornerShape(30.dp), HazeStyle(tint=Color.White.copy(alpha=0.18f), blurRadius=blurVal.dp, noiseFactor=0.05f)),
                   contentAlignment = Alignment.Center) {
-                  Row(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
-                      detectHorizontalDragGestures(
-                          onDragEnd = {
-                              if (abs(dragOffset) > 35f) { onTabSelected(tabs[targetIdx]); haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
-                              dragOffset = 0f
-                          },
-                          onHorizontalDrag = { _, amt -> dragOffset += amt }
+                  
+                  BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                      val tabWidth = maxWidth / tabs.size
+                      // Makkhan Spring Animation for the Glowing Pill!
+                      val indicatorOffset by animateDpAsState(
+                          targetValue = tabWidth * currentIdx + (dragOffset / 3f).dp, 
+                          animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                          label = "pillIndicator"
                       )
-                  }, horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                      tabIcons.forEachIndexed { idx, icon ->
-                          val isSel = currentIdx == idx
-                          IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onTabSelected(tabs[idx]) }) {
-                              Icon(icon, null, tint = if(isSel) Color.White else Color.Gray)
+
+                      // TERA GLOWING FLUID PILL (Ye chhoot gaya tha pichli baar 😭)
+                      Box(modifier = Modifier
+                          .offset(x = indicatorOffset)
+                          .width(tabWidth)
+                          .fillMaxHeight()
+                          .padding(8.dp)
+                          .shadow(15.dp, RoundedCornerShape(25.dp), spotColor = Color.White, ambientColor = Color.White)
+                          .background(Color.White.copy(alpha = 0.25f), RoundedCornerShape(25.dp))
+                      )
+
+                      Row(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
+                          detectHorizontalDragGestures(
+                              onDragEnd = {
+                                  if (abs(dragOffset) > 35f) { onTabSelected(tabs[targetIdx]); haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
+                                  dragOffset = 0f
+                              },
+                              onHorizontalDrag = { _, amt -> dragOffset += amt }
+                          )
+                      }, horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                          tabIcons.forEachIndexed { idx, icon ->
+                              val isSel = currentIdx == idx
+                              IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onTabSelected(tabs[idx]) }, modifier = Modifier.weight(1f)) {
+                                  Icon(icon, null, tint = if(isSel) Color.White else Color.Gray)
+                              }
                           }
                       }
                   }
