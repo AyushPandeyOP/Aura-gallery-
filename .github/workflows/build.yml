@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode V18 - The Masterpiece) 💀🔥
+name: Aura Gallery (God Mode V19 - Compiler Fixed) 💀🔥
 
 on:
   push:
@@ -21,10 +21,11 @@ jobs:
           mkdir -p app/src/main/java/com/aura/gallery
           mkdir -p app/src/main/res/values
 
+          # RAM BOOST: 2GB to 4GB for faster compiling!
           cat << 'EOF' > gradle.properties
           android.useAndroidX=true
           android.nonTransitiveRClass=true
-          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
           EOF
 
           cat << 'EOF' > settings.gradle.kts
@@ -40,7 +41,7 @@ jobs:
 
           cat << 'EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
-          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "1.8" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
+          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "1.9" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
           dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("androidx.compose.foundation:foundation"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0"); implementation("androidx.media3:media3-exoplayer:1.2.1"); implementation("androidx.media3:media3-ui:1.2.1") }
           EOF
 
@@ -65,7 +66,7 @@ jobs:
           <resources><string name="app_name">Aura Gallery</string></resources>
           EOF
 
-          # V18 MASTERPIECE ENGINE (Fluid Switch + Pager + Account Hub + Infinite Glow)
+          # V19 CLEAN ARCHITECTURE ENGINE 💀 (Fixes Compiler Crash)
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           package com.aura.gallery
           import android.Manifest
@@ -116,212 +117,233 @@ jobs:
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
                   WindowCompat.setDecorFitsSystemWindows(window, false)
-                  setContent {
-                      val context = LocalContext.current
-                      val haptic = LocalHapticFeedback.current
-                      val view = LocalView.current
-                      val window = (context as Activity).window
-                      val scope = rememberCoroutineScope()
-                      
-                      var mediaList by remember { mutableStateOf<List<Media>>(emptyList()) }
-                      var hasPerm by remember { mutableStateOf(false) }
-                      var screen by remember { mutableStateOf("GALLERY") } // GALLERY, EXPLORE, STUDIO, VAULT, SETTINGS
-                      var selIndex by remember { mutableStateOf(0) }
-                      var isFullScreen by remember { mutableStateOf(false) }
-                      var blurVal by remember { mutableStateOf(40f) }
-                      
-                      val gridState = rememberLazyGridState()
-                      
-                      if (isFullScreen) BackHandler { isFullScreen = false }
-                      else if (screen != "GALLERY") BackHandler { screen = "GALLERY" }
+                  setContent { AuraApp() }
+              }
+          }
 
-                      val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { hasPerm = it.values.all { true } }
-                      LaunchedEffect(Unit) {
-                          if (Build.VERSION.SDK_INT >= 33) launcher.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO))
-                          else launcher.launch(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE))
+          @Composable
+          fun AuraApp() {
+              val context = LocalContext.current
+              val haptic = LocalHapticFeedback.current
+              val view = LocalView.current
+              val window = (context as Activity).window
+              var mediaList by remember { mutableStateOf<List<Media>>(emptyList()) }
+              var hasPerm by remember { mutableStateOf(false) }
+              var screen by remember { mutableStateOf("GALLERY") }
+              var selIndex by remember { mutableStateOf(0) }
+              var isFullScreen by remember { mutableStateOf(false) }
+              var blurVal by remember { mutableStateOf(40f) }
+              val hazeState = remember { HazeState() }
+
+              if (isFullScreen) BackHandler { isFullScreen = false }
+              else if (screen != "GALLERY") BackHandler { screen = "GALLERY" }
+
+              val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { hasPerm = it.values.all { true } }
+              LaunchedEffect(Unit) {
+                  if (Build.VERSION.SDK_INT >= 33) launcher.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO))
+                  else launcher.launch(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE))
+              }
+              
+              LaunchedEffect(hasPerm) {
+                  if (hasPerm) {
+                      withContext(Dispatchers.IO) {
+                          val uri = MediaStore.Files.getContentUri("external")
+                          val proj = arrayOf(MediaStore.Files.FileColumns._ID, MediaStore.Files.FileColumns.MEDIA_TYPE)
+                          val sel = "${MediaStore.Files.FileColumns.MEDIA_TYPE}=? OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=?"
+                          val args = arrayOf(MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE.toString(), MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO.toString())
+                          val cursor = context.contentResolver.query(uri, proj, sel, args, "${MediaStore.Files.FileColumns.DATE_ADDED} DESC")
+                          val list = mutableListOf<Media>()
+                          cursor?.use { c ->
+                              val idCol = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
+                              val typeCol = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MEDIA_TYPE)
+                              while (c.moveToNext()) list.add(Media(ContentUris.withAppendedId(MediaStore.Files.getContentUri("external"), c.getLong(idCol)).toString(), c.getInt(typeCol) == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO))
+                          }
+                          mediaList = list
                       }
-                      LaunchedEffect(hasPerm) {
-                          if (hasPerm) {
-                              withContext(Dispatchers.IO) {
-                                  val uri = MediaStore.Files.getContentUri("external")
-                                  val proj = arrayOf(MediaStore.Files.FileColumns._ID, MediaStore.Files.FileColumns.MEDIA_TYPE)
-                                  val sel = "${MediaStore.Files.FileColumns.MEDIA_TYPE}=? OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=?"
-                                  val args = arrayOf(MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE.toString(), MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO.toString())
-                                  val cursor = context.contentResolver.query(uri, proj, sel, args, "${MediaStore.Files.FileColumns.DATE_ADDED} DESC")
-                                  val list = mutableListOf<Media>()
-                                  cursor?.use { c ->
-                                      val idCol = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
-                                      val typeCol = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MEDIA_TYPE)
-                                      while (c.moveToNext()) list.add(Media(ContentUris.withAppendedId(MediaStore.Files.getContentUri("external"), c.getLong(idCol)).toString(), c.getInt(typeCol) == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO))
-                                  }
-                                  mediaList = list
-                              }
+                  }
+              }
+
+              DisposableEffect(isFullScreen) {
+                  if (isFullScreen) {
+                      window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                      WindowCompat.getInsetsController(window, view).apply { hide(WindowInsetsCompat.Type.systemBars()); systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE }
+                  } else {
+                      window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                      WindowCompat.getInsetsController(window, view).show(WindowInsetsCompat.Type.systemBars())
+                  }
+                  onDispose { window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); WindowCompat.getInsetsController(window, view).show(WindowInsetsCompat.Type.systemBars()) }
+              }
+
+              Box(modifier = Modifier.fillMaxSize().background(Color(0xFF050505))) {
+                  if (!isFullScreen) {
+                      when (screen) {
+                          "GALLERY" -> GalleryGrid(mediaList, hasPerm, hazeState) { idx -> selIndex = idx; isFullScreen = true }
+                          "SETTINGS" -> SettingsHub(blurVal, { blurVal = it }, hazeState)
+                          else -> DummyScreen(screen, hazeState)
+                      }
+                  } else if (mediaList.isNotEmpty()) {
+                      MediaPagerScreen(mediaList, selIndex) { isFullScreen = false }
+                  }
+                  
+                  if (!isFullScreen) {
+                      TopBar(screen, hazeState, blurVal, Modifier.align(Alignment.TopCenter)) { screen = if(screen == "SETTINGS") "GALLERY" else "SETTINGS" }
+                      BottomDock(screen, hazeState, blurVal, Modifier.align(Alignment.BottomCenter)) { screen = it }
+                  }
+              }
+          }
+
+          @Composable
+          fun GalleryGrid(mediaList: List<Media>, hasPerm: Boolean, hazeState: HazeState, onMediaClick: (Int) -> Unit) {
+              val gridState = rememberLazyGridState()
+              val navBarPad = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+              if (mediaList.isEmpty() && hasPerm) CircularProgressIndicator(modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center), color = Color.White)
+              else LazyVerticalGrid(state = gridState, columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top=110.dp, bottom=130.dp+navBarPad)) { 
+                  itemsIndexed(mediaList) { index, media -> 
+                      Box(modifier = Modifier.aspectRatio(1f).padding(1.dp).clickable { onMediaClick(index) }, contentAlignment=Alignment.Center) {
+                          AsyncImage(model=ImageRequest.Builder(LocalContext.current).data(media.uri).crossfade(true).build(), contentDescription=null, contentScale=ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                          if (media.isVideo) Icon(Icons.Default.PlayArrow, null, tint=Color.White, modifier=Modifier.size(26.dp).shadow(4.dp))
+                      }
+                  } 
+              }
+          }
+
+          @Composable
+          fun MediaPagerScreen(mediaList: List<Media>, initialIndex: Int, onBack: () -> Unit) {
+              val pagerState = rememberPagerState(initialPage = initialIndex) { mediaList.size }
+              HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                  MediaViewer(mediaList[page], onBack)
+              }
+          }
+
+          @Composable
+          fun MediaViewer(media: Media, onBack: () -> Unit) {
+              val context = LocalContext.current
+              val haptic = LocalHapticFeedback.current
+              val scope = rememberCoroutineScope()
+              val scale = remember { Animatable(1f) }
+              val offset = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
+              var dragOffsetY by remember { mutableStateOf(0f) }
+              val bgAlpha by animateFloatAsState(1f - (abs(dragOffsetY)/800f).coerceIn(0f, 1f), label="a")
+
+              Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha=bgAlpha))
+                  .pointerInput(Unit) {
+                      detectTapGestures(onDoubleTap = { tapOffset ->
+                          scope.launch {
+                              if (scale.value > 1f) { launch { scale.animateTo(1f, tween(300)) }; launch { offset.animateTo(Offset.Zero, tween(300)) } } 
+                              else { launch { scale.animateTo(3f, tween(300)) }; launch { offset.animateTo(Offset((size.width/2f - tapOffset.x)*2f, (size.height/2f - tapOffset.y)*2f), tween(300)) } }
+                          }
+                      })
+                  }.pointerInput(Unit) {
+                      detectTransformGestures { _, pan, zoom, _ ->
+                          scope.launch {
+                              val newScale = (scale.value * zoom).coerceIn(1f, 5f)
+                              scale.snapTo(newScale)
+                              if (newScale > 1f) {
+                                  val maxX = (size.width * (newScale - 1)) / 2f
+                                  val maxY = (size.height * (newScale - 1)) / 2f
+                                  offset.snapTo(Offset((offset.value.x + pan.x * newScale).coerceIn(-maxX, maxX), (offset.value.y + pan.y * newScale).coerceIn(-maxY, maxY)))
+                              } else { offset.snapTo(Offset.Zero) }
                           }
                       }
+                  }.pointerInput(Unit) {
+                      detectDragGestures(
+                          onDragEnd = {
+                              if (scale.value == 1f) {
+                                  if (dragOffsetY > 250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onBack() }
+                                  else if (dragOffsetY < -250f) {
+                                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                      context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type=if(media.isVideo) "video/*" else "image/*"; putExtra(Intent.EXTRA_STREAM, Uri.parse(media.uri)); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, "Share"))
+                                      onBack()
+                                  }
+                                  dragOffsetY = 0f
+                              }
+                          }, onDrag = { change, amt -> if(scale.value==1f) { change.consume(); dragOffsetY += amt.y } }
+                      )
+                  }, contentAlignment = Alignment.Center) {
+                  val mod = Modifier.fillMaxSize().offset{IntOffset(0, dragOffsetY.roundToInt())}.graphicsLayer(scaleX=scale.value, scaleY=scale.value, translationX=offset.value.x, translationY=offset.value.y)
+                  if (media.isVideo) {
+                      val exoPlayer = remember { ExoPlayer.Builder(context).build().apply { setMediaItem(MediaItem.fromUri(media.uri)); prepare(); playWhenReady = true } }
+                      DisposableEffect(Unit) { onDispose { exoPlayer.release() } }
+                      AndroidView(factory = { ctx -> PlayerView(ctx).apply { player = exoPlayer; useController = true } }, modifier = mod)
+                  } else {
+                      AsyncImage(model=ImageRequest.Builder(context).data(media.uri).crossfade(true).build(), contentDescription=null, contentScale=ContentScale.Fit, modifier = mod)
+                  }
+              }
+          }
 
-                      DisposableEffect(isFullScreen) {
-                          if (isFullScreen) {
-                              window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                              WindowCompat.getInsetsController(window, view).apply { hide(WindowInsetsCompat.Type.systemBars()); systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE }
-                          } else {
-                              window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                              WindowCompat.getInsetsController(window, view).show(WindowInsetsCompat.Type.systemBars())
-                          }
-                          onDispose { window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); WindowCompat.getInsetsController(window, view).show(WindowInsetsCompat.Type.systemBars()) }
+          @Composable
+          fun SettingsHub(blurVal: Float, onBlurChange: (Float) -> Unit, hazeState: HazeState) {
+              Column(modifier = Modifier.fillMaxSize().haze(state=hazeState).padding(24.dp).padding(top=110.dp, bottom=100.dp), horizontalAlignment=Alignment.CenterHorizontally) {
+                  Text("AURA SETTINGS", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                  Spacer(Modifier.height(30.dp))
+                  Text("Liquid Glass Blur Level: ${blurVal.toInt()}", color = Color.Gray)
+                  Slider(value = blurVal, onValueChange = onBlurChange, valueRange = 10f..80f, colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White))
+                  Spacer(Modifier.height(20.dp))
+                  Button(onClick = { }, modifier = Modifier.fillMaxWidth().height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF151515))) { Text("Setup Secure Vault PIN", color = Color.White) }
+                  Spacer(Modifier.weight(1f))
+                  PandeyJiGlow()
+              }
+          }
+
+          @Composable
+          fun DummyScreen(screen: String, hazeState: HazeState) {
+              Column(modifier = Modifier.fillMaxSize().haze(state=hazeState).padding(top=120.dp), horizontalAlignment=Alignment.CenterHorizontally) {
+                  Text(screen, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                  Spacer(Modifier.height(20.dp))
+                  Text("Advanced AI Studio & Vault Engine... 💀", color = Color.Gray, fontSize = 16.sp)
+                  Spacer(Modifier.weight(1f))
+                  PandeyJiGlow()
+                  Spacer(Modifier.height(110.dp))
+              }
+          }
+
+          @Composable
+          fun PandeyJiGlow() {
+              val anim = rememberInfiniteTransition(label="glow")
+              val alpha by anim.animateFloat(0.2f, 1f, infiniteRepeatable(tween(1500), RepeatMode.Reverse), label="alpha")
+              Text("Developed By Pandey Ji 👑", color=Color(0xFFFFD700).copy(alpha=alpha), style=TextStyle(shadow=Shadow(Color(0xFFFFD700), blurRadius=30f*alpha)), fontSize=18.sp, fontWeight=FontWeight.ExtraBold)
+          }
+
+          @Composable
+          fun TopBar(screen: String, hazeState: HazeState, blurVal: Float, modifier: Modifier, onProfileClick: () -> Unit) {
+              val haptic = LocalHapticFeedback.current
+              Box(modifier = modifier.padding(top=40.dp, start=24.dp, end=24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(tint=Color.White.copy(alpha=0.1f), blurRadius=blurVal.dp, noiseFactor=0.05f))) {
+                  Row(modifier = Modifier.fillMaxSize().padding(horizontal=16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                      Icon(Icons.Default.Search, null, tint=Color.Gray)
+                      Text("Smart Search...", color=Color.Gray, fontSize=16.sp, modifier=Modifier.weight(1f).padding(start=12.dp))
+                      IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onProfileClick() }) {
+                          Icon(Icons.Default.Person, null, tint = if(screen=="SETTINGS") Color(0xFFFFD700) else Color.White.copy(alpha=0.8f))
                       }
+                  }
+              }
+          }
 
-                      val hazeState = remember { HazeState() }
-                      val navBarPad = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+          @Composable
+          fun BottomDock(screen: String, hazeState: HazeState, blurVal: Float, modifier: Modifier, onTabSelected: (String) -> Unit) {
+              val haptic = LocalHapticFeedback.current
+              val navBarPad = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+              val tabs = listOf("GALLERY", "EXPLORE", "STUDIO", "VAULT")
+              val tabIcons = listOf(Icons.Default.Home, Icons.Default.Search, Icons.Default.Create, Icons.Default.Lock)
+              val currentIdx = tabs.indexOf(screen).coerceAtLeast(0)
+              var dragOffset by remember { mutableStateOf(0f) }
+              val targetIdx = (currentIdx + (dragOffset / 70f).roundToInt()).coerceIn(0, tabs.size - 1)
 
-                      Box(modifier = Modifier.fillMaxSize().background(Color(0xFF050505))) {
-                          
-                          // 1. GALLERY & TABS
-                          if (!isFullScreen) {
-                              if (screen == "GALLERY") {
-                                  if (mediaList.isEmpty() && hasPerm) CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
-                                  else LazyVerticalGrid(state = gridState, columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top=110.dp, bottom=130.dp+navBarPad)) { 
-                                      itemsIndexed(mediaList) { index, media -> 
-                                          Box(modifier = Modifier.aspectRatio(1f).padding(1.dp).clickable { selIndex = index; isFullScreen = true }, contentAlignment=Alignment.Center) {
-                                              AsyncImage(model=ImageRequest.Builder(context).data(media.uri).crossfade(true).build(), contentDescription=null, contentScale=ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                                              if (media.isVideo) Icon(Icons.Default.PlayArrow, null, tint=Color.White, modifier=Modifier.size(26.dp).shadow(4.dp))
-                                          }
-                                      } 
-                                  }
-                              } else if (screen == "SETTINGS") {
-                                  // ACCOUNT SETTINGS HUB (BETA)
-                                  Column(modifier = Modifier.fillMaxSize().haze(state=hazeState).padding(24.dp).padding(top=110.dp, bottom=100.dp), horizontalAlignment=Alignment.CenterHorizontally) {
-                                      Text("AURA SETTINGS", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                                      Spacer(Modifier.height(30.dp))
-                                      Text("Liquid Glass Blur Level: ${blurVal.toInt()}", color = Color.Gray)
-                                      Slider(value = blurVal, onValueChange = { blurVal = it }, valueRange = 10f..80f, colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White))
-                                      Spacer(Modifier.height(20.dp))
-                                      Button(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) }, modifier = Modifier.fillMaxWidth().height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF151515))) { Text("Setup Secure Vault PIN", color = Color.White) }
-                                      Spacer(Modifier.weight(1f))
-                                      val anim = rememberInfiniteTransition(label="glow")
-                                      val alpha by anim.animateFloat(0.2f, 1f, infiniteRepeatable(tween(1500), RepeatMode.Reverse), label="alpha")
-                                      Text("Developed By Pandey Ji 👑", color=Color(0xFFFFD700).copy(alpha=alpha), style=TextStyle(shadow=Shadow(Color(0xFFFFD700), blurRadius=30f*alpha)), fontSize=18.sp, fontWeight=FontWeight.ExtraBold)
-                                  }
-                              } else {
-                                  Column(modifier = Modifier.fillMaxSize().haze(state=hazeState).padding(top=120.dp), horizontalAlignment=Alignment.CenterHorizontally) {
-                                      Text(screen, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                                      Spacer(Modifier.height(20.dp))
-                                      Text("Advanced AI Studio & Vault Engine... 💀", color = Color.Gray, fontSize = 16.sp)
-                                      Spacer(Modifier.weight(1f))
-                                      val anim = rememberInfiniteTransition(label="glow")
-                                      val alpha by anim.animateFloat(0.2f, 1f, infiniteRepeatable(tween(1500), RepeatMode.Reverse), label="alpha")
-                                      Text("Developed By Pandey Ji 👑", color=Color(0xFFFFD700).copy(alpha=alpha), style=TextStyle(shadow=Shadow(Color(0xFFFFD700), blurRadius=30f*alpha)), fontSize=18.sp, fontWeight=FontWeight.ExtraBold)
-                                      Spacer(Modifier.height(110.dp))
-                                  }
-                              }
-                          }
-
-                          // 2. FULL SCREEN HORIZONTAL PAGER (JAILBREAK SWIPE)
-                          if (isFullScreen && mediaList.isNotEmpty()) {
-                              val pagerState = rememberPagerState(initialPage = selIndex) { mediaList.size }
-                              
-                              HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
-                                  val media = mediaList[page]
-                                  val scale = remember { Animatable(1f) }
-                                  val offset = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
-                                  var dragOffsetY by remember { mutableStateOf(0f) }
-                                  val bgAlpha by animateFloatAsState(1f - (abs(dragOffsetY)/800f).coerceIn(0f, 1f), label="a")
-
-                                  Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha=bgAlpha))
-                                      .pointerInput(Unit) {
-                                          detectTapGestures(onDoubleTap = { tapOffset ->
-                                              scope.launch {
-                                                  if (scale.value > 1f) {
-                                                      launch { scale.animateTo(1f, tween(300)) }
-                                                      launch { offset.animateTo(Offset.Zero, tween(300)) }
-                                                  } else {
-                                                      val cX = size.width / 2f; val cY = size.height / 2f
-                                                      launch { scale.animateTo(3f, tween(300)) }
-                                                      launch { offset.animateTo(Offset((cX - tapOffset.x) * 2f, (cY - tapOffset.y) * 2f), tween(300)) }
-                                                  }
-                                              }
-                                          })
-                                      }.pointerInput(Unit) {
-                                          detectTransformGestures { _, pan, zoom, _ ->
-                                              scope.launch {
-                                                  val newScale = (scale.value * zoom).coerceIn(1f, 5f)
-                                                  scale.snapTo(newScale)
-                                                  if (newScale > 1f) {
-                                                      val maxX = (size.width * (newScale - 1)) / 2f
-                                                      val maxY = (size.height * (newScale - 1)) / 2f
-                                                      offset.snapTo(Offset((offset.value.x + pan.x * newScale).coerceIn(-maxX, maxX), (offset.value.y + pan.y * newScale).coerceIn(-maxY, maxY)))
-                                                  } else { offset.snapTo(Offset.Zero) }
-                                              }
-                                          }
-                                      }.pointerInput(Unit) {
-                                          detectDragGestures(
-                                              onDragEnd = {
-                                                  if (scale.value == 1f) {
-                                                      if (dragOffsetY > 250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); isFullScreen = false }
-                                                      else if (dragOffsetY < -250f) {
-                                                          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                          context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type=if(media.isVideo) "video/*" else "image/*"; putExtra(Intent.EXTRA_STREAM, Uri.parse(media.uri)); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, "Share"))
-                                                          isFullScreen = false
-                                                      }
-                                                      dragOffsetY = 0f
-                                                  }
-                                              }, onDrag = { change, amt -> if(scale.value==1f) { change.consume(); dragOffsetY += amt.y } }
-                                          )
-                                      }, contentAlignment = Alignment.Center) {
-                                      val mod = Modifier.fillMaxSize().offset{IntOffset(0, dragOffsetY.roundToInt())}.graphicsLayer(scaleX=scale.value, scaleY=scale.value, translationX=offset.value.x, translationY=offset.value.y)
-                                      if (media.isVideo) {
-                                          val exoPlayer = remember { ExoPlayer.Builder(context).build().apply { setMediaItem(MediaItem.fromUri(media.uri)); prepare(); playWhenReady = true } }
-                                          DisposableEffect(Unit) { onDispose { exoPlayer.release() } }
-                                          AndroidView(factory = { PlayerView(context).apply { player = exoPlayer; useController = true } }, modifier = mod)
-                                      } else {
-                                          AsyncImage(model=ImageRequest.Builder(context).data(media.uri).crossfade(true).build(), contentDescription=null, contentScale=ContentScale.Fit, modifier = mod)
-                                      }
-                                  }
-                              }
-                          }
-
-                          // 3. TOP SEARCH & ACCOUNT HUB
-                          if (!isFullScreen) {
-                              Box(modifier = Modifier.align(Alignment.TopCenter).padding(top=40.dp, start=24.dp, end=24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(Color.White.copy(0.1f), blurVal.dp, 0.05f))) {
-                                  Row(modifier = Modifier.fillMaxSize().padding(horizontal=16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                      Icon(Icons.Default.Search, null, tint=Color.Gray)
-                                      Text("Smart Search...", color=Color.Gray, fontSize=16.sp, modifier=Modifier.weight(1f).padding(start=12.dp))
-                                      IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen = if(screen == "SETTINGS") "GALLERY" else "SETTINGS" }) {
-                                          Icon(Icons.Default.Person, null, tint = if(screen=="SETTINGS") Color(0xFFFFD700) else Color.White.copy(alpha=0.8f))
-                                      }
-                                  }
-                              }
-                          }
-
-                          // 4. AURA FLUID SWITCH (INTERACTIVE DRAGGABLE & CLICKABLE DOCK)
-                          if (!isFullScreen) {
-                              val tabs = listOf("GALLERY", "EXPLORE", "STUDIO", "VAULT")
-                              val tabIcons = listOf(Icons.Default.Home, Icons.Default.Search, Icons.Default.Create, Icons.Default.Lock)
-                              val currentIdx = tabs.indexOf(screen).coerceAtLeast(0)
-                              var dragOffset by remember { mutableStateOf(0f) }
-                              val targetIdx = (currentIdx + (dragOffset / 70f).roundToInt()).coerceIn(0, tabs.size - 1)
-
-                              Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom=24.dp+navBarPad).widthIn(max = 380.dp).fillMaxWidth(0.85f).height(65.dp)
-                                  .shadow(15.dp, RoundedCornerShape(30.dp), spotColor = Color.White.copy(alpha=0.4f))
-                                  .hazeChild(hazeState, RoundedCornerShape(30.dp), HazeStyle(Color.White.copy(0.15f), blurVal.dp, 0.05f)),
-                                  contentAlignment = Alignment.Center) {
-                                  
-                                  Row(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
-                                      detectHorizontalDragGestures(
-                                          onDragEnd = {
-                                              if (abs(dragOffset) > 35f) { screen = tabs[targetIdx]; haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
-                                              dragOffset = 0f
-                                          },
-                                          onHorizontalDrag = { _, amt -> dragOffset += amt }
-                                      )
-                                  }, horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                                      tabIcons.forEachIndexed { idx, icon ->
-                                          val isSel = currentIdx == idx
-                                          IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen = tabs[idx] }) {
-                                              Icon(icon, null, tint = if(isSel) Color.White else Color.Gray)
-                                          }
-                                      }
-                                  }
-                              }
+              Box(modifier = modifier.padding(bottom=24.dp+navBarPad).widthIn(max = 380.dp).fillMaxWidth(0.85f).height(65.dp)
+                  .shadow(15.dp, RoundedCornerShape(30.dp), spotColor = Color.White.copy(alpha=0.4f))
+                  .hazeChild(hazeState, RoundedCornerShape(30.dp), HazeStyle(tint=Color.White.copy(alpha=0.15f), blurRadius=blurVal.dp, noiseFactor=0.05f)),
+                  contentAlignment = Alignment.Center) {
+                  Row(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
+                      detectHorizontalDragGestures(
+                          onDragEnd = {
+                              if (abs(dragOffset) > 35f) { onTabSelected(tabs[targetIdx]); haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
+                              dragOffset = 0f
+                          },
+                          onHorizontalDrag = { _, amt -> dragOffset += amt }
+                      )
+                  }, horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                      tabIcons.forEachIndexed { idx, icon ->
+                          IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onTabSelected(tabs[idx]) }) {
+                              Icon(icon, null, tint = if(currentIdx == idx) Color.White else Color.Gray)
                           }
                       }
                   }
