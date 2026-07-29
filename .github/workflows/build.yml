@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode V14) 💀🔥
+name: Aura Gallery (God Mode V15) 💀🔥
 
 on:
   push:
@@ -41,7 +41,7 @@ jobs:
           cat << 'EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
           android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "1.0" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
-          dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0") }
+          dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0"); implementation("androidx.media3:media3-exoplayer:1.2.1"); implementation("androidx.media3:media3-ui:1.2.1") }
           EOF
 
           cat << 'EOF' > app/src/main/AndroidManifest.xml
@@ -49,6 +49,7 @@ jobs:
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
               <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+              <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
               <application android:allowBackup="true" android:label="Aura Gallery" android:supportsRtl="true" android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
                   <activity android:name=".MainActivity" android:exported="true">
                       <intent-filter>
@@ -64,7 +65,7 @@ jobs:
           <resources><string name="app_name">Aura Gallery</string></resources>
           EOF
 
-          # COMPRESSED V14 MAIN CODE (To fit your mobile clipboard perfectly)
+          # V15 EXOPLAYER + ZOOM ENGINE 💀
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           package com.aura.gallery
           import android.Manifest
@@ -77,7 +78,7 @@ jobs:
           import androidx.activity.result.contract.ActivityResultContracts
           import androidx.compose.animation.core.*
           import androidx.compose.foundation.*
-          import androidx.compose.foundation.gestures.detectDragGestures
+          import androidx.compose.foundation.gestures.*
           import androidx.compose.foundation.layout.*
           import androidx.compose.foundation.lazy.grid.*
           import androidx.compose.foundation.shape.RoundedCornerShape
@@ -95,11 +96,17 @@ jobs:
           import androidx.compose.ui.text.TextStyle
           import androidx.compose.ui.text.font.FontWeight
           import androidx.compose.ui.unit.*
+          import androidx.compose.ui.viewinterop.AndroidView
           import androidx.core.view.WindowCompat
+          import androidx.media3.common.MediaItem
+          import androidx.media3.exoplayer.ExoPlayer
+          import androidx.media3.ui.PlayerView
           import coil.compose.AsyncImage
           import dev.chrisbanes.haze.*
           import kotlinx.coroutines.*
           import kotlin.math.*
+
+          data class Media(val uri: String, val isVideo: Boolean)
 
           class MainActivity : ComponentActivity() {
               override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,32 +115,53 @@ jobs:
                   setContent {
                       val context = LocalContext.current
                       val haptic = LocalHapticFeedback.current
-                      var photos by remember { mutableStateOf<List<String>>(emptyList()) }
+                      var mediaList by remember { mutableStateOf<List<Media>>(emptyList()) }
                       var hasPerm by remember { mutableStateOf(false) }
                       var screen by remember { mutableStateOf("GALLERY") }
-                      var selUri by remember { mutableStateOf("") }
+                      var selMedia by remember { mutableStateOf<Media?>(null) }
+                      
                       if (screen != "GALLERY") BackHandler { screen = "GALLERY" }
-                      val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { hasPerm = it }
-                      LaunchedEffect(Unit) { launcher.launch(if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_IMAGES else Manifest.permission.READ_EXTERNAL_STORAGE) }
+                      val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { hasPerm = it.values.all { true } }
+                      LaunchedEffect(Unit) {
+                          if (Build.VERSION.SDK_INT >= 33) launcher.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO))
+                          else launcher.launch(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE))
+                      }
                       LaunchedEffect(hasPerm) {
                           if (hasPerm) {
                               withContext(Dispatchers.IO) {
-                                  val cursor = context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, arrayOf(MediaStore.Images.Media._ID), null, null, "${MediaStore.Images.Media.DATE_ADDED} DESC")
-                                  val list = mutableListOf<String>()
+                                  val uri = MediaStore.Files.getContentUri("external")
+                                  val proj = arrayOf(MediaStore.Files.FileColumns._ID, MediaStore.Files.FileColumns.MEDIA_TYPE)
+                                  val sel = "${MediaStore.Files.FileColumns.MEDIA_TYPE}=? OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=?"
+                                  val args = arrayOf(MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE.toString(), MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO.toString())
+                                  val cursor = context.contentResolver.query(uri, proj, sel, args, "${MediaStore.Files.FileColumns.DATE_ADDED} DESC")
+                                  val list = mutableListOf<Media>()
                                   cursor?.use { c ->
-                                      val idCol = c.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
-                                      while (c.moveToNext()) list.add(ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, c.getLong(idCol)).toString())
+                                      val idCol = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
+                                      val typeCol = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MEDIA_TYPE)
+                                      while (c.moveToNext()) {
+                                          val contentUri = ContentUris.withAppendedId(MediaStore.Files.getContentUri("external"), c.getLong(idCol)).toString()
+                                          val isVid = c.getInt(typeCol) == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO
+                                          list.add(Media(contentUri, isVid))
+                                      }
                                   }
-                                  photos = list
+                                  mediaList = list
                               }
                           }
                       }
                       val hazeState = remember { HazeState() }
                       Box(modifier = Modifier.fillMaxSize().background(Color(0xFF050505))) {
                           if (screen == "GALLERY") {
-                              if (photos.isEmpty() && hasPerm) CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
-                              else LazyVerticalGrid(columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top=110.dp, bottom=120.dp)) { items(photos) { uri -> AsyncImage(model=uri, contentDescription=null, contentScale=ContentScale.Crop, modifier = Modifier.aspectRatio(1f).padding(1.dp).clickable { selUri=uri; screen="PHOTO" }) } }
+                              if (mediaList.isEmpty() && hasPerm) CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
+                              else LazyVerticalGrid(columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top=110.dp, bottom=120.dp)) { 
+                                  items(mediaList) { media -> 
+                                      Box(modifier = Modifier.aspectRatio(1f).padding(1.dp).clickable { selMedia=media; screen="PHOTO" }, contentAlignment=Alignment.Center) {
+                                          AsyncImage(model=media.uri, contentDescription=null, contentScale=ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                                          if (media.isVideo) Icon(Icons.Default.PlayArrow, null, tint=Color.White, modifier=Modifier.size(30.dp).shadow(5.dp))
+                                      }
+                                  } 
+                              }
                           }
+                          
                           if (screen in listOf("EXPLORE", "STUDIO", "VAULT")) {
                               Column(modifier = Modifier.fillMaxSize().haze(state=hazeState).padding(top=100.dp), horizontalAlignment=Alignment.CenterHorizontally) {
                                   Text(screen, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
@@ -146,20 +174,41 @@ jobs:
                                   Spacer(Modifier.height(110.dp))
                               }
                           }
-                          if (screen == "PHOTO") {
+                          
+                          if (screen == "PHOTO" && selMedia != null) {
                               var offsetY by remember { mutableStateOf(0f) }
-                              val scale by animateFloatAsState(if (abs(offsetY)>50f) 0.85f else 1f, label="s")
+                              var scale by remember { mutableStateOf(1f) }
                               val bgAlpha by animateFloatAsState(1f - (abs(offsetY)/800f).coerceIn(0f, 1f), label="a")
+                              
                               Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha=bgAlpha)).pointerInput(Unit) {
+                                  detectTransformGestures { _, pan, zoom, _ -> 
+                                      scale = (scale * zoom).coerceIn(1f, 5f)
+                                      if (scale == 1f) {
+                                          offsetY += pan.y
+                                      }
+                                  }
+                              }.pointerInput(Unit) {
                                   detectDragGestures(
                                       onDragEnd = {
-                                          if (offsetY > 250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="GALLERY" }
-                                          else if (offsetY < -250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type="image/*"; putExtra(Intent.EXTRA_STREAM, Uri.parse(selUri)); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, "Share")); screen="GALLERY" }
-                                          offsetY = 0f
-                                      }, onDrag = { change, amt -> change.consume(); offsetY += amt.y }
+                                          if (scale == 1f) {
+                                              if (offsetY > 250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="GALLERY" }
+                                              else if (offsetY < -250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type=if(selMedia!!.isVideo) "video/*" else "image/*"; putExtra(Intent.EXTRA_STREAM, Uri.parse(selMedia!!.uri)); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, "Share")); screen="GALLERY" }
+                                              offsetY = 0f
+                                          }
+                                      }, onDrag = { change, amt -> if(scale==1f) { change.consume(); offsetY += amt.y } }
                                   )
-                              }, contentAlignment = Alignment.Center) { AsyncImage(model=selUri, contentDescription=null, contentScale=ContentScale.Fit, modifier = Modifier.fillMaxSize().offset{IntOffset(0, offsetY.roundToInt())}.scale(scale)) }
+                              }, contentAlignment = Alignment.Center) { 
+                                  val mod = Modifier.fillMaxSize().offset{IntOffset(0, offsetY.roundToInt())}.graphicsLayer(scaleX=scale, scaleY=scale)
+                                  if (selMedia!!.isVideo) {
+                                      val exoPlayer = remember { ExoPlayer.Builder(context).build().apply { setMediaItem(MediaItem.fromUri(selMedia!!.uri)); prepare(); playWhenReady = true } }
+                                      DisposableEffect(Unit) { onDispose { exoPlayer.release() } }
+                                      AndroidView(factory = { PlayerView(context).apply { player = exoPlayer; useController = true } }, modifier = mod)
+                                  } else {
+                                      AsyncImage(model=selMedia!!.uri, contentDescription=null, contentScale=ContentScale.Fit, modifier = mod) 
+                                  }
+                              }
                           }
+                          
                           if (screen != "PHOTO") {
                               Box(modifier = Modifier.align(Alignment.TopCenter).padding(top=40.dp, start=24.dp, end=24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(Color.White.copy(0.1f), 30.dp, 0.05f))) { Row(modifier = Modifier.fillMaxSize().padding(horizontal=16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Search, null, tint=Color.Gray); Text("Smart Search...", color=Color.Gray, fontSize=16.sp, modifier=Modifier.weight(1f).padding(start=12.dp)); Icon(Icons.Default.Person, null, tint=Color.White.copy(0.8f)) } }
                               Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom=36.dp, start=30.dp, end=30.dp).fillMaxWidth().height(65.dp).shadow(15.dp, RoundedCornerShape(30.dp)).hazeChild(hazeState, RoundedCornerShape(30.dp), HazeStyle(Color.White.copy(0.15f), 40.dp, 0.05f))) { Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) { IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="GALLERY"}) { Icon(Icons.Default.Home, null, tint=if(screen=="GALLERY") Color.White else Color.Gray) }; IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="EXPLORE"}) { Icon(Icons.Default.Search, null, tint=if(screen=="EXPLORE") Color.White else Color.Gray) }; IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="STUDIO"}) { Icon(Icons.Default.Create, null, tint=if(screen=="STUDIO") Color.White else Color.Gray) }; IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="VAULT"}) { Icon(Icons.Default.Lock, null, tint=if(screen=="VAULT") Color.White else Color.Gray) } } }
