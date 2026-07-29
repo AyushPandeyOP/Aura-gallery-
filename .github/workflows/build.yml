@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode V24 - The TRUE Fluid Pill) 💀🔥
+name: Aura Gallery (God Mode V25 - True Golden Fluid & Bug Fixes) 💀🔥
 
 on:
   push:
@@ -40,8 +40,8 @@ jobs:
 
           cat << 'EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
-          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "2.4" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
-          dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("androidx.compose.foundation:foundation"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0"); implementation("androidx.media3:media3-exoplayer:1.2.1"); implementation("androidx.media3:media3-ui:1.2.1") }
+          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "2.5" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
+          dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("androidx.compose.foundation:foundation"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0"); implementation("androidx.media3:media3-exoplayer:1.2.1"); implementation("androidx.media3:media3-ui:1.2.1"); implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0") }
           EOF
 
           cat << 'EOF' > app/src/main/AndroidManifest.xml
@@ -71,7 +71,7 @@ jobs:
           data class Media(val uri: String, val isVideo: Boolean)
           EOF
 
-          # FILE 2: UI Components (Now with the REAL Glowing Fluid Pill) 💀
+          # FILE 2: UI Components (GOLDEN FLUID PILL FIXED + AUTO-HIDE) 💀
           cat << 'EOF' > app/src/main/java/com/aura/gallery/Components.kt
           @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
           package com.aura.gallery
@@ -105,9 +105,10 @@ jobs:
           }
 
           @Composable
-          fun TopBar(screen: String, hazeState: HazeState, blurVal: Float, modifier: Modifier, onProfileClick: () -> Unit) {
+          fun TopBar(screen: String, hazeState: HazeState, blurVal: Float, isScrolling: Boolean, modifier: Modifier, onProfileClick: () -> Unit) {
               val haptic = LocalHapticFeedback.current
-              Box(modifier = modifier.padding(top=40.dp, start=24.dp, end=24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(tint=Color.White.copy(alpha=0.1f), blurRadius=blurVal.dp, noiseFactor=0.05f))) {
+              val alpha by animateFloatAsState(targetValue = if(isScrolling) 0f else 1f, tween(300), label="topBarAlpha")
+              Box(modifier = modifier.alpha(alpha).padding(top=40.dp, start=24.dp, end=24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(tint=Color.White.copy(alpha=0.1f), blurRadius=blurVal.dp, noiseFactor=0.05f))) {
                   Row(modifier = Modifier.fillMaxSize().padding(horizontal=16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                       Icon(Icons.Default.Search, null, tint=Color.Gray)
                       Text("Smart Search...", color=Color.Gray, fontSize=16.sp, modifier=Modifier.weight(1f).padding(start=12.dp))
@@ -145,52 +146,61 @@ jobs:
           }
 
           @Composable
-          fun BottomDock(screen: String, hazeState: HazeState, blurVal: Float, modifier: Modifier, onTabSelected: (String) -> Unit) {
+          fun BottomDock(screen: String, hazeState: HazeState, blurVal: Float, isScrolling: Boolean, modifier: Modifier, onTabSelected: (String) -> Unit) {
               val haptic = LocalHapticFeedback.current
               val navBarPad = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+              val barAlpha by animateFloatAsState(targetValue = if(isScrolling) 0f else 1f, tween(300), label="dockAlpha")
               val tabs = listOf("GALLERY", "EXPLORE", "STUDIO", "VAULT")
               val tabIcons = listOf(Icons.Default.Home, Icons.Default.Search, Icons.Default.Create, Icons.Default.Lock)
               val currentIdx = tabs.indexOf(screen).coerceAtLeast(0)
               var dragOffset by remember { mutableStateOf(0f) }
-              val targetIdx = (currentIdx + (dragOffset / 70f).roundToInt()).coerceIn(0, tabs.size - 1)
+              val goldenColor = Color(0xFFFFD700)
 
-              Box(modifier = modifier.padding(bottom=24.dp+navBarPad).widthIn(max = 380.dp).fillMaxWidth(0.85f).height(65.dp)
+              Box(modifier = modifier.alpha(barAlpha).padding(bottom=24.dp+navBarPad).widthIn(max = 380.dp).fillMaxWidth(0.85f).height(65.dp)
                   .shadow(20.dp, RoundedCornerShape(30.dp), spotColor = Color.White.copy(alpha=0.6f))
                   .hazeChild(hazeState, RoundedCornerShape(30.dp), HazeStyle(tint=Color.White.copy(alpha=0.18f), blurRadius=blurVal.dp, noiseFactor=0.05f)),
                   contentAlignment = Alignment.Center) {
                   
-                  BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                  BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp)) {
                       val tabWidth = maxWidth / tabs.size
-                      // Makkhan Spring Animation for the Glowing Pill!
+                      val maxDrag = tabWidth.value * (tabs.size - 1)
+                      
+                      // Fluid Math calculated properly!
                       val indicatorOffset by animateDpAsState(
-                          targetValue = tabWidth * currentIdx + (dragOffset / 3f).dp, 
+                          targetValue = (tabWidth * currentIdx) + dragOffset.dp,
                           animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-                          label = "pillIndicator"
+                          label = "goldenPill"
                       )
 
-                      // TERA GLOWING FLUID PILL (Ye chhoot gaya tha pichli baar 😭)
+                      // THE TRUE GOLDEN FLUID PILL 💀👑
                       Box(modifier = Modifier
                           .offset(x = indicatorOffset)
                           .width(tabWidth)
                           .fillMaxHeight()
-                          .padding(8.dp)
-                          .shadow(15.dp, RoundedCornerShape(25.dp), spotColor = Color.White, ambientColor = Color.White)
-                          .background(Color.White.copy(alpha = 0.25f), RoundedCornerShape(25.dp))
+                          .padding(vertical = 10.dp, horizontal = 4.dp)
+                          .shadow(15.dp, RoundedCornerShape(25.dp), spotColor = goldenColor, ambientColor = goldenColor)
+                          .background(goldenColor.copy(alpha = 0.4f), RoundedCornerShape(25.dp))
+                          .border(1.dp, goldenColor.copy(alpha = 0.8f), RoundedCornerShape(25.dp))
                       )
 
                       Row(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
                           detectHorizontalDragGestures(
                               onDragEnd = {
-                                  if (abs(dragOffset) > 35f) { onTabSelected(tabs[targetIdx]); haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
+                                  val movedIdx = (dragOffset / tabWidth.value).roundToInt()
+                                  val finalIdx = (currentIdx + movedIdx).coerceIn(0, tabs.size - 1)
+                                  if (finalIdx != currentIdx) { onTabSelected(tabs[finalIdx]); haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
                                   dragOffset = 0f
                               },
-                              onHorizontalDrag = { _, amt -> dragOffset += amt }
+                              onHorizontalDrag = { _, amt -> 
+                                  val proposedOffset = dragOffset + amt
+                                  val rawAbsoluteX = (currentIdx * tabWidth.value) + proposedOffset
+                                  if (rawAbsoluteX in 0f..maxDrag) dragOffset = proposedOffset 
+                              }
                           )
                       }, horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
                           tabIcons.forEachIndexed { idx, icon ->
-                              val isSel = currentIdx == idx
-                              IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onTabSelected(tabs[idx]) }, modifier = Modifier.weight(1f)) {
-                                  Icon(icon, null, tint = if(isSel) Color.White else Color.Gray)
+                              IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); dragOffset = 0f; onTabSelected(tabs[idx]) }, modifier = Modifier.weight(1f)) {
+                                  Icon(icon, null, tint = if(currentIdx == idx) Color.White else Color.Gray)
                               }
                           }
                       }
@@ -199,7 +209,7 @@ jobs:
           }
           EOF
 
-          # FILE 3: MainActivity (Core Engine & Pager)
+          # FILE 3: MainActivity (Core Engine, V18 Bug Fixes Restored) 💀
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
           package com.aura.gallery
@@ -234,6 +244,9 @@ jobs:
           import androidx.compose.ui.unit.*
           import androidx.compose.ui.viewinterop.AndroidView
           import androidx.core.view.*
+          import androidx.lifecycle.Lifecycle
+          import androidx.lifecycle.LifecycleEventObserver
+          import androidx.lifecycle.compose.LocalLifecycleOwner
           import androidx.media3.common.MediaItem
           import androidx.media3.exoplayer.ExoPlayer
           import androidx.media3.ui.PlayerView
@@ -263,6 +276,7 @@ jobs:
               var isFullScreen by remember { mutableStateOf(false) }
               var blurVal by remember { mutableStateOf(40f) }
               val hazeState = remember { HazeState() }
+              val gridState = rememberLazyGridState()
 
               if (isFullScreen) BackHandler { isFullScreen = false }
               else if (screen != "GALLERY") BackHandler { screen = "GALLERY" }
@@ -306,7 +320,7 @@ jobs:
               Box(modifier = Modifier.fillMaxSize().background(Color(0xFF050505))) {
                   if (!isFullScreen) {
                       when (screen) {
-                          "GALLERY" -> GalleryGrid(mediaList, hasPerm, hazeState) { idx -> selIndex = idx; isFullScreen = true }
+                          "GALLERY" -> GalleryGrid(mediaList, hasPerm, hazeState, gridState) { idx -> selIndex = idx; isFullScreen = true }
                           "SETTINGS" -> SettingsHub(blurVal, { blurVal = it }, hazeState)
                           else -> DummyScreen(screen, hazeState)
                       }
@@ -315,15 +329,14 @@ jobs:
                   }
                   
                   if (!isFullScreen) {
-                      TopBar(screen, hazeState, blurVal, Modifier.align(Alignment.TopCenter)) { screen = if(screen == "SETTINGS") "GALLERY" else "SETTINGS" }
-                      BottomDock(screen, hazeState, blurVal, Modifier.align(Alignment.BottomCenter)) { screen = it }
+                      TopBar(screen, hazeState, blurVal, gridState.isScrollInProgress, Modifier.align(Alignment.TopCenter)) { screen = if(screen == "SETTINGS") "GALLERY" else "SETTINGS" }
+                      BottomDock(screen, hazeState, blurVal, gridState.isScrollInProgress, Modifier.align(Alignment.BottomCenter)) { screen = it }
                   }
               }
           }
 
           @Composable
-          fun GalleryGrid(mediaList: List<Media>, hasPerm: Boolean, hazeState: HazeState, onMediaClick: (Int) -> Unit) {
-              val gridState = rememberLazyGridState()
+          fun GalleryGrid(mediaList: List<Media>, hasPerm: Boolean, hazeState: HazeState, gridState: LazyGridState, onMediaClick: (Int) -> Unit) {
               val navBarPad = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
               if (mediaList.isEmpty() && hasPerm) CircularProgressIndicator(modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center), color = Color.White)
               else LazyVerticalGrid(state = gridState, columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top=110.dp, bottom=130.dp+navBarPad)) { 
@@ -392,7 +405,12 @@ jobs:
                   val mod = Modifier.fillMaxSize().offset{IntOffset(0, dragOffsetY.roundToInt())}.graphicsLayer(scaleX=scale.value, scaleY=scale.value, translationX=offset.value.x, translationY=offset.value.y)
                   if (media.isVideo) {
                       val exoPlayer = remember { ExoPlayer.Builder(context).build().apply { setMediaItem(MediaItem.fromUri(media.uri)); prepare(); playWhenReady = true } }
-                      DisposableEffect(Unit) { onDispose { exoPlayer.release() } }
+                      val lifecycleOwner = LocalLifecycleOwner.current
+                      DisposableEffect(lifecycleOwner) {
+                          val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_PAUSE) exoPlayer.pause() }
+                          lifecycleOwner.lifecycle.addObserver(observer)
+                          onDispose { lifecycleOwner.lifecycle.removeObserver(observer); exoPlayer.release() }
+                      }
                       AndroidView(factory = { ctx -> PlayerView(ctx).apply { player = exoPlayer; useController = true } }, modifier = mod)
                   } else {
                       AsyncImage(model=ImageRequest.Builder(context).data(media.uri).crossfade(true).build(), contentDescription=null, contentScale=ContentScale.Fit, modifier = mod)
