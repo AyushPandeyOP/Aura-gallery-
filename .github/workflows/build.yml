@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode V9 - Real Photos) 💀🔥
+name: Aura Gallery (God Mode beta V10 - The Monster Build) 💀🔥
 
 on:
   push:
@@ -38,14 +38,12 @@ jobs:
           plugins { id("com.android.application") version "8.3.2" apply false; id("org.jetbrains.kotlin.android") version "1.9.23" apply false }
           EOF
 
-          # Added Coil Dependency for Image Loading
           cat << 'EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
           android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "1.0" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
           dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0") }
           EOF
 
-          # Added Storage Permissions
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -66,7 +64,7 @@ jobs:
           <resources><string name="app_name">Aura Gallery</string></resources>
           EOF
 
-          # Real Image Fetching & Coil AsyncImage Engine
+          # The Ultimate Monster Engine (Settings + Gestures + Liquid Glass)
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           package com.aura.gallery
           import android.Manifest
@@ -78,7 +76,10 @@ jobs:
           import androidx.activity.compose.setContent
           import androidx.activity.compose.rememberLauncherForActivityResult
           import androidx.activity.result.contract.ActivityResultContracts
+          import androidx.compose.animation.core.animateFloatAsState
           import androidx.compose.foundation.background
+          import androidx.compose.foundation.clickable
+          import androidx.compose.foundation.gestures.detectDragGestures
           import androidx.compose.foundation.layout.*
           import androidx.compose.foundation.lazy.grid.*
           import androidx.compose.foundation.shape.RoundedCornerShape
@@ -90,10 +91,17 @@ jobs:
           import androidx.compose.runtime.*
           import androidx.compose.ui.Alignment
           import androidx.compose.ui.Modifier
+          import androidx.compose.ui.draw.scale
           import androidx.compose.ui.graphics.Color
+          import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+          import androidx.compose.ui.input.pointer.pointerInput
           import androidx.compose.ui.layout.ContentScale
           import androidx.compose.ui.platform.LocalContext
+          import androidx.compose.ui.platform.LocalHapticFeedback
+          import androidx.compose.ui.text.font.FontWeight
+          import androidx.compose.ui.unit.IntOffset
           import androidx.compose.ui.unit.dp
+          import androidx.compose.ui.unit.sp
           import coil.compose.AsyncImage
           import dev.chrisbanes.haze.HazeState
           import dev.chrisbanes.haze.haze
@@ -101,14 +109,21 @@ jobs:
           import dev.chrisbanes.haze.HazeStyle
           import kotlinx.coroutines.Dispatchers
           import kotlinx.coroutines.withContext
+          import kotlin.math.roundToInt
 
           class MainActivity : ComponentActivity() {
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
                   setContent {
                       val context = LocalContext.current
+                      val haptic = LocalHapticFeedback.current
+                      
+                      // App State Management
                       var photos by remember { mutableStateOf<List<String>>(emptyList()) }
                       var hasPermission by remember { mutableStateOf(false) }
+                      var activeScreen by remember { mutableStateOf("GALLERY") } // GALLERY, PHOTO, SETTINGS
+                      var selectedPhotoUri by remember { mutableStateOf("") }
+                      var blurRadiusValue by remember { mutableStateOf(30f) }
 
                       val permissionLauncher = rememberLauncherForActivityResult(
                           ActivityResultContracts.RequestPermission()
@@ -128,19 +143,12 @@ jobs:
                               withContext(Dispatchers.IO) {
                                   val projection = arrayOf(MediaStore.Images.Media._ID)
                                   val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
-                                  val query = context.contentResolver.query(
-                                      MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                                      projection, null, null, sortOrder
-                                  )
+                                  val query = context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projection, null, null, sortOrder)
                                   val loadedPhotos = mutableListOf<String>()
                                   query?.use { cursor ->
                                       val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
                                       while (cursor.moveToNext()) {
-                                          val id = cursor.getLong(idColumn)
-                                          val contentUri = ContentUris.withAppendedId(
-                                              MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
-                                          ).toString()
-                                          loadedPhotos.add(contentUri)
+                                          loadedPhotos.add(ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cursor.getLong(idColumn)).toString())
                                       }
                                   }
                                   photos = loadedPhotos
@@ -149,42 +157,138 @@ jobs:
                       }
 
                       val hazeState = remember { HazeState() }
-                      Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-                          if (photos.isEmpty() && hasPermission) {
-                              CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
-                          } else {
-                              LazyVerticalGrid(
-                                  columns = GridCells.Fixed(4), // 4 columns ki grid
-                                  modifier = Modifier.fillMaxSize().haze(state = hazeState), 
-                                  contentPadding = PaddingValues(bottom = 90.dp)
-                              ) {
-                                  items(photos) { uri ->
-                                      AsyncImage(
-                                          model = uri,
-                                          contentDescription = "Photo",
-                                          contentScale = ContentScale.Crop,
-                                          modifier = Modifier.aspectRatio(1f).padding(1.dp)
-                                      )
+                      
+                      Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A0A))) {
+                          
+                          // 1. GALLERY SCREEN
+                          if (activeScreen == "GALLERY") {
+                              if (photos.isEmpty() && hasPermission) {
+                                  CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
+                              } else {
+                                  LazyVerticalGrid(
+                                      columns = GridCells.Fixed(4),
+                                      modifier = Modifier.fillMaxSize().haze(state = hazeState),
+                                      contentPadding = PaddingValues(bottom = 90.dp)
+                                  ) {
+                                      items(photos) { uri ->
+                                          AsyncImage(
+                                              model = uri, contentDescription = "Photo", contentScale = ContentScale.Crop,
+                                              modifier = Modifier.aspectRatio(1f).padding(1.dp)
+                                                  .clickable { 
+                                                      selectedPhotoUri = uri
+                                                      activeScreen = "PHOTO"
+                                                  }
+                                          )
+                                      }
                                   }
                               }
                           }
 
-                          Box(
-                              modifier = Modifier
-                                  .align(Alignment.BottomCenter)
-                                  .padding(bottom = 24.dp, start = 24.dp, end = 24.dp)
-                                  .fillMaxWidth()
-                                  .height(70.dp)
-                                  .hazeChild(
-                                      state = hazeState, 
-                                      shape = RoundedCornerShape(35.dp), 
-                                      style = HazeStyle(tint = Color.White.copy(alpha = 0.15f), blurRadius = 30.dp, noiseFactor = 0.05f)
+                          // 2. SETTINGS SCREEN
+                          if (activeScreen == "SETTINGS") {
+                              Column(
+                                  modifier = Modifier.fillMaxSize().haze(state = hazeState).padding(24.dp),
+                                  horizontalAlignment = Alignment.CenterHorizontally
+                              ) {
+                                  Spacer(modifier = Modifier.height(40.dp))
+                                  Text("AURA SETTINGS", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                                  Spacer(modifier = Modifier.height(40.dp))
+                                  
+                                  Text("Liquid Glass Blur Level: ${blurRadiusValue.toInt()}", color = Color.Gray)
+                                  Slider(
+                                      value = blurRadiusValue,
+                                      onValueChange = { blurRadiusValue = it },
+                                      valueRange = 10f..80f,
+                                      colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White)
                                   )
-                          ) {
-                              Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                                  IconButton(onClick = {}) { Icon(Icons.Default.Home, contentDescription = "Photos", tint = Color.White) }
-                                  IconButton(onClick = {}) { Icon(Icons.Default.Lock, contentDescription = "Vault", tint = Color.White) }
-                                  IconButton(onClick = {}) { Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White) }
+                                  
+                                  Spacer(modifier = Modifier.height(30.dp))
+                                  Button(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) }, modifier = Modifier.fillMaxWidth().height(55.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E))) {
+                                      Text("Scan for Blurry Photos (AI Engine)", color = Color.White)
+                                  }
+                                  
+                                  Spacer(modifier = Modifier.height(16.dp))
+                                  Button(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) }, modifier = Modifier.fillMaxWidth().height(55.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E))) {
+                                      Text("Setup Vault PIN", color = Color.White)
+                                  }
+                                  
+                                  Spacer(modifier = Modifier.weight(1f))
+                                  // PANDEY JI MASTERSTROKE
+                                  Text("Developed By Pandey Ji 👑", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                  Spacer(modifier = Modifier.height(90.dp))
+                              }
+                          }
+
+                          // 3. FULL SCREEN PHOTO WITH SWIPE GESTURE
+                          if (activeScreen == "PHOTO") {
+                              var offsetY by remember { mutableStateOf(0f) }
+                              val scale by animateFloatAsState(targetValue = if (offsetY > 50f) 0.85f else 1f, label = "scale")
+                              val bgAlpha by animateFloatAsState(targetValue = 1f - (offsetY / 800f).coerceIn(0f, 1f), label = "alpha")
+
+                              Box(
+                                  modifier = Modifier
+                                      .fillMaxSize()
+                                      .background(Color.Black.copy(alpha = bgAlpha))
+                                      .pointerInput(Unit) {
+                                          detectDragGestures(
+                                              onDragEnd = {
+                                                  if (offsetY > 300f) {
+                                                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                      activeScreen = "GALLERY"
+                                                  }
+                                                  offsetY = 0f
+                                              },
+                                              onDrag = { change, dragAmount ->
+                                                  change.consume()
+                                                  if (dragAmount.y > 0 || offsetY > 0) { // Allow only downward swipe
+                                                      offsetY += dragAmount.y
+                                                  }
+                                              }
+                                          )
+                                      },
+                                  contentAlignment = Alignment.Center
+                              ) {
+                                  AsyncImage(
+                                      model = selectedPhotoUri,
+                                      contentDescription = "Full Screen",
+                                      contentScale = ContentScale.Fit,
+                                      modifier = Modifier
+                                          .fillMaxSize()
+                                          .offset { IntOffset(0, offsetY.roundToInt()) }
+                                          .scale(scale)
+                                  )
+                              }
+                          }
+
+                          // 4. FLOATING LIQUID GLASS BAR (Hidden in Photo View)
+                          if (activeScreen != "PHOTO") {
+                              Box(
+                                  modifier = Modifier
+                                      .align(Alignment.BottomCenter)
+                                      .padding(bottom = 24.dp, start = 24.dp, end = 24.dp)
+                                      .fillMaxWidth()
+                                      .height(70.dp)
+                                      .hazeChild(
+                                          state = hazeState, 
+                                          shape = RoundedCornerShape(35.dp), 
+                                          style = HazeStyle(tint = Color.White.copy(alpha = 0.15f), blurRadius = blurRadiusValue.dp, noiseFactor = 0.05f)
+                                      )
+                              ) {
+                                  Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                                      IconButton(onClick = { 
+                                          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                          activeScreen = "GALLERY" 
+                                      }) { Icon(Icons.Default.Home, contentDescription = "Home", tint = if(activeScreen=="GALLERY") Color.White else Color.Gray) }
+                                      
+                                      IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) }) { 
+                                          Icon(Icons.Default.Lock, contentDescription = "Vault", tint = Color.Gray) 
+                                      }
+                                      
+                                      IconButton(onClick = { 
+                                          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                          activeScreen = "SETTINGS" 
+                                      }) { Icon(Icons.Default.Settings, contentDescription = "Settings", tint = if(activeScreen=="SETTINGS") Color.White else Color.Gray) }
+                                  }
                               }
                           }
                       }
