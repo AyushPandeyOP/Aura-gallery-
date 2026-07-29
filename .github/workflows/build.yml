@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode V12 - Phase 1) 💀🔥
+name: Aura Gallery (God Mode V13) 💀🔥
 
 on:
   push:
@@ -64,9 +64,10 @@ jobs:
           <resources><string name="app_name">Aura Gallery</string></resources>
           EOF
 
-          # V12 MONSTER ENGINE (PHASE 1 BLUEPRINT)
+          # V13 MONSTER ENGINE (FIXED ICONS & IMPORTS)
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           package com.aura.gallery
+          
           import android.Manifest
           import android.content.ContentUris
           import android.content.Intent
@@ -87,7 +88,12 @@ jobs:
           import androidx.compose.foundation.lazy.grid.*
           import androidx.compose.foundation.shape.RoundedCornerShape
           import androidx.compose.material.icons.Icons
-          import androidx.compose.material.icons.filled.*
+          import androidx.compose.material.icons.filled.Create
+          import androidx.compose.material.icons.filled.Home
+          import androidx.compose.material.icons.filled.Lock
+          import androidx.compose.material.icons.filled.Person
+          import androidx.compose.material.icons.filled.Search
+          import androidx.compose.material.icons.filled.Settings
           import androidx.compose.material3.*
           import androidx.compose.runtime.*
           import androidx.compose.ui.Alignment
@@ -114,6 +120,7 @@ jobs:
           import dev.chrisbanes.haze.HazeStyle
           import kotlinx.coroutines.Dispatchers
           import kotlinx.coroutines.withContext
+          import kotlin.math.abs
           import kotlin.math.roundToInt
 
           class MainActivity : ComponentActivity() {
@@ -176,7 +183,7 @@ jobs:
                                   LazyVerticalGrid(
                                       columns = GridCells.Fixed(4),
                                       modifier = Modifier.fillMaxSize().haze(state = hazeState),
-                                      contentPadding = PaddingValues(top = 110.dp, bottom = 120.dp) // Added top padding for search bar
+                                      contentPadding = PaddingValues(top = 110.dp, bottom = 120.dp) 
                                   ) {
                                       items(photos) { uri ->
                                           AsyncImage(
@@ -192,7 +199,6 @@ jobs:
                               }
                           }
 
-                          // DUMMY SCREEN FOR OTHER TABS TO SHOW PANDEY JI TAG
                           if (activeScreen == "EXPLORE" || activeScreen == "STUDIO" || activeScreen == "VAULT") {
                               Column(
                                   modifier = Modifier.fillMaxSize().haze(state = hazeState).padding(24.dp).padding(top = 100.dp),
@@ -204,7 +210,6 @@ jobs:
                                   
                                   Spacer(modifier = Modifier.weight(1f))
                                   
-                                  // PANDEY JI GLOW 👑
                                   val infiniteTransition = rememberInfiniteTransition(label = "glow")
                                   val glowAlpha by infiniteTransition.animateFloat(
                                       initialValue = 0.2f, targetValue = 1f,
@@ -221,11 +226,10 @@ jobs:
                               }
                           }
 
-                          // FULL SCREEN PHOTO WITH SWIPE GESTURES
                           if (activeScreen == "PHOTO") {
                               var offsetY by remember { mutableStateOf(0f) }
                               val scale by animateFloatAsState(targetValue = if (offsetY > 50f || offsetY < -50f) 0.85f else 1f, label = "scale")
-                              val bgAlpha by animateFloatAsState(targetValue = 1f - (Math.abs(offsetY) / 800f).coerceIn(0f, 1f), label = "alpha")
+                              val bgAlpha by animateFloatAsState(targetValue = 1f - (abs(offsetY) / 800f).coerceIn(0f, 1f), label = "alpha")
 
                               Box(
                                   modifier = Modifier
@@ -235,11 +239,9 @@ jobs:
                                           detectDragGestures(
                                               onDragEnd = {
                                                   if (offsetY > 250f) {
-                                                      // Swipe Down to Close
                                                       haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                       activeScreen = "GALLERY"
                                                   } else if (offsetY < -250f) {
-                                                      // Swipe Up for Quick Share! 🚀
                                                       haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                       val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                                           type = "image/*"
@@ -268,7 +270,6 @@ jobs:
                               }
                           }
 
-                          // TOP HEADER: SMART SEARCH BAR
                           if (activeScreen != "PHOTO") {
                               Box(
                                   modifier = Modifier
@@ -286,12 +287,11 @@ jobs:
                                   Row(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                       Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Gray)
                                       Text("Smart Search...", color = Color.Gray, fontSize = 16.sp, modifier = Modifier.weight(1f).padding(start = 12.dp))
-                                      Icon(Icons.Default.AccountCircle, contentDescription = "Sync", tint = Color.White.copy(alpha = 0.8f))
+                                      Icon(Icons.Default.Person, contentDescription = "Sync", tint = Color.White.copy(alpha = 0.8f))
                                   }
                               }
                           }
 
-                          // BOTTOM DOCK: 4 ICONS TABS
                           if (activeScreen != "PHOTO") {
                               Box(
                                   modifier = Modifier
@@ -307,15 +307,14 @@ jobs:
                                       )
                               ) {
                                   Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                                      // Photos Tab
                                       IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); activeScreen = "GALLERY" }) { 
                                           Icon(Icons.Default.Home, contentDescription = "Photos", tint = if(activeScreen=="GALLERY") Color.White else Color.Gray) 
                                       }
-                                      // Explore Tab
                                       IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); activeScreen = "EXPLORE" }) { 
                                           Icon(Icons.Default.Search, contentDescription = "Explore", tint = if(activeScreen=="EXPLORE") Color.White else Color.Gray) 
                                       }
-                                      // AI Studio Tab
                                       IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); activeScreen = "STUDIO" }) { 
-                                          Icon(Icons.Default.Edit, contentDescription = "AI Studio", tint = if(activeScreen=="STUDIO") Color.White else Color.Gray) 
-                       
+                                          Icon(Icons.Default.Create, contentDescription = "AI Studio", tint = if(activeScreen=="STUDIO") Color.White else Color.Gray) 
+                                      }
+                                      IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); activeScreen = "VAULT" }) { 
+                                          Icon(Icons.Default.Lock, contentDescription = "Vault", tint = if(activeScreen=="VAULT") Color.White else Color.Gray) 
