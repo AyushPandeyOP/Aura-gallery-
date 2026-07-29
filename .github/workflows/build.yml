@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode V30 - The Absolute Final Fix) 💀🔥
+name: Aura Gallery (V32 - Slide Hide & Perfect Pill) 💀🔥
 
 on:
   push:
@@ -38,11 +38,10 @@ jobs:
           plugins { id("com.android.application") version "8.3.2" apply false; id("org.jetbrains.kotlin.android") version "1.9.23" apply false }
           EOF
 
-          # Reverted experimental dependencies, keeping it 100% stable
           cat << 'EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
-          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "3.0" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
-          dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("androidx.compose.foundation:foundation"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0"); implementation("androidx.media3:media3-exoplayer:1.2.1"); implementation("androidx.media3:media3-ui:1.2.1") }
+          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "3.2" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
+          dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("androidx.compose.foundation:foundation"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0"); implementation("androidx.media3:media3-exoplayer:1.2.1"); implementation("androidx.media3:media3-ui:1.2.1"); implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0") }
           EOF
 
           cat << 'EOF' > app/src/main/AndroidManifest.xml
@@ -66,19 +65,19 @@ jobs:
           <resources><string name="app_name">Aura Gallery</string></resources>
           EOF
 
+          # FILE 1: Media Model
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MediaModel.kt
           package com.aura.gallery
           data class Media(val uri: String, val isVideo: Boolean)
           EOF
 
-          # FILE 2: THE REAL GOLDEN FLUID SWITCH
+          # FILE 2: UI Components (Slide Hide Fix + Tap Spring Pill Fix)
           cat << 'EOF' > app/src/main/java/com/aura/gallery/Components.kt
           @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
           package com.aura.gallery
 
           import androidx.compose.animation.core.*
           import androidx.compose.foundation.*
-          import androidx.compose.foundation.gestures.*
           import androidx.compose.foundation.layout.*
           import androidx.compose.foundation.shape.RoundedCornerShape
           import androidx.compose.material.icons.Icons
@@ -89,13 +88,11 @@ jobs:
           import androidx.compose.ui.draw.*
           import androidx.compose.ui.graphics.*
           import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-          import androidx.compose.ui.input.pointer.pointerInput
           import androidx.compose.ui.platform.*
           import androidx.compose.ui.text.TextStyle
           import androidx.compose.ui.text.font.FontWeight
           import androidx.compose.ui.unit.*
           import dev.chrisbanes.haze.*
-          import kotlin.math.*
 
           @Composable
           fun PandeyJiGlow() {
@@ -107,8 +104,9 @@ jobs:
           @Composable
           fun TopBar(screen: String, hazeState: HazeState, blurVal: Float, isScrolling: Boolean, modifier: Modifier, onProfileClick: () -> Unit) {
               val haptic = LocalHapticFeedback.current
-              val alpha by animateFloatAsState(targetValue = if(isScrolling) 0f else 1f, tween(300), label="topBarAlpha")
-              Box(modifier = modifier.alpha(alpha).padding(top=40.dp, start=24.dp, end=24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(tint=Color.White.copy(alpha=0.1f), blurRadius=blurVal.dp, noiseFactor=0.05f))) {
+              // APPLE STYLE HIDE: Slide Top Bar UP out of screen
+              val offsetY by animateDpAsState(targetValue = if(isScrolling) (-100).dp else 0.dp, animationSpec = tween(300), label="topBarSlide")
+              Box(modifier = modifier.offset(y = offsetY).padding(top=40.dp, start=24.dp, end=24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(tint=Color.White.copy(alpha=0.1f), blurRadius=blurVal.dp, noiseFactor=0.05f))) {
                   Row(modifier = Modifier.fillMaxSize().padding(horizontal=16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                       Icon(Icons.Default.Search, null, tint=Color.Gray)
                       Text("Smart Search...", color=Color.Gray, fontSize=16.sp, modifier=Modifier.weight(1f).padding(start=12.dp))
@@ -148,33 +146,31 @@ jobs:
           @Composable
           fun BottomDock(screen: String, hazeState: HazeState, blurVal: Float, isScrolling: Boolean, modifier: Modifier, onTabSelected: (String) -> Unit) {
               val haptic = LocalHapticFeedback.current
-              val density = LocalDensity.current
               val navBarPad = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-              val barAlpha by animateFloatAsState(targetValue = if(isScrolling) 0f else 1f, tween(300), label="dockAlpha")
+              
+              // APPLE STYLE HIDE: Slide Bottom Dock DOWN out of screen (Removes the Blur bug!)
+              val offsetY by animateDpAsState(targetValue = if(isScrolling) 150.dp else 0.dp, animationSpec = tween(300), label="dockSlide")
               
               val tabs = listOf("GALLERY", "EXPLORE", "STUDIO", "VAULT")
               val tabIcons = listOf(Icons.Default.Home, Icons.Default.Search, Icons.Default.Create, Icons.Default.Lock)
               val currentIdx = tabs.indexOf(screen).coerceAtLeast(0)
-              
-              var dragOffsetDp by remember { mutableFloatStateOf(0f) }
               val goldenColor = Color(0xFFFFD700)
 
-              Box(modifier = modifier.alpha(barAlpha).padding(bottom=24.dp+navBarPad).widthIn(max = 380.dp).fillMaxWidth(0.85f).height(65.dp)
+              Box(modifier = modifier.offset(y = offsetY).padding(bottom=24.dp+navBarPad).widthIn(max = 380.dp).fillMaxWidth(0.85f).height(65.dp)
                   .shadow(20.dp, RoundedCornerShape(30.dp), spotColor = Color.White.copy(alpha=0.6f))
                   .hazeChild(hazeState, RoundedCornerShape(30.dp), HazeStyle(tint=Color.White.copy(alpha=0.18f), blurRadius=blurVal.dp, noiseFactor=0.05f)),
                   contentAlignment = Alignment.Center) {
                   
                   BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp)) {
                       val tabWidthDp = maxWidth / tabs.size
-                      val maxDragDp = tabWidthDp.value * (tabs.size - 1)
                       
+                      // SPRING ANIMATION MATH: No dragging bugs, just smooth pure animation on tap
                       val indicatorOffset by animateDpAsState(
-                          targetValue = (tabWidthDp * currentIdx) + dragOffsetDp.dp,
-                          animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
+                          targetValue = tabWidthDp * currentIdx,
+                          animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
                           label = "goldenPill"
                       )
 
-                      // THE TRUE GLOWING GOLDEN LIQUID PILL
                       Box(modifier = Modifier
                           .offset(x = indicatorOffset)
                           .width(tabWidthDp)
@@ -185,32 +181,10 @@ jobs:
                           .border(1.5.dp, goldenColor, RoundedCornerShape(25.dp))
                       )
 
-                      Row(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
-                          detectHorizontalDragGestures(
-                              onDragEnd = {
-                                  val movedIdx = (dragOffsetDp / tabWidthDp.value).roundToInt()
-                                  val finalIdx = (currentIdx + movedIdx).coerceIn(0, tabs.size - 1)
-                                  if (finalIdx != currentIdx) { 
-                                      onTabSelected(tabs[finalIdx])
-                                      haptic.performHapticFeedback(HapticFeedbackType.LongPress) 
-                                  }
-                                  dragOffsetDp = 0f
-                              },
-                              onHorizontalDrag = { change, amt -> 
-                                  change.consume()
-                                  val amtDp = with(density) { amt.toDp().value }
-                                  val proposedOffset = dragOffsetDp + amtDp
-                                  val rawAbsoluteX = (currentIdx * tabWidthDp.value) + proposedOffset
-                                  if (rawAbsoluteX in 0f..maxDragDp) {
-                                      dragOffsetDp = proposedOffset 
-                                  }
-                              }
-                          )
-                      }, horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                      Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
                           tabIcons.forEachIndexed { idx, icon ->
                               IconButton(onClick = { 
                                   haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                  dragOffsetDp = 0f
                                   onTabSelected(tabs[idx]) 
                               }, modifier = Modifier.weight(1f)) {
                                   Icon(icon, null, tint = if(currentIdx == idx) Color.White else Color.Gray)
@@ -222,7 +196,7 @@ jobs:
           }
           EOF
 
-          # FILE 3: MainActivity (Fixed imports and lifecycle safe implementation)
+          # FILE 3: MainActivity (Vertical Drag Fix & Zoom Math Fix)
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
           package com.aura.gallery
@@ -373,61 +347,53 @@ jobs:
           fun MediaViewer(media: Media, onBack: () -> Unit) {
               val context = LocalContext.current
               val haptic = LocalHapticFeedback.current
-              val scope = rememberCoroutineScope()
-              val scale = remember { Animatable(1f) }
-              val offset = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
-              var dragOffsetY by remember { mutableStateOf(0f) }
+              
+              // JITTER FIX: Removed Animatable from zoom gesture for instant 60fps tracking
+              var scale by remember { mutableFloatStateOf(1f) }
+              var offset by remember { mutableStateOf(Offset.Zero) }
+              var dragOffsetY by remember { mutableFloatStateOf(0f) }
               val bgAlpha by animateFloatAsState(1f - (abs(dragOffsetY)/800f).coerceIn(0f, 1f), label="a")
 
               Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha=bgAlpha))
                   .pointerInput(Unit) {
-                      detectTapGestures(onDoubleTap = { tapOffset ->
-                          scope.launch {
-                              if (scale.value > 1f) { 
-                                  launch { scale.animateTo(1f, tween(300)) }
-                                  launch { offset.animateTo(Offset.Zero, tween(300)) } 
-                              } else { 
-                                  val targetScale = 3f
-                                  launch { scale.animateTo(targetScale, tween(300)) }
-                                  val targetX = (size.width / 2f - tapOffset.x) * targetScale
-                                  val targetY = (size.height / 2f - tapOffset.y) * targetScale
-                                  val maxX = (size.width * (targetScale - 1)) / 2f
-                                  val maxY = (size.height * (targetScale - 1)) / 2f
-                                  launch { offset.animateTo(Offset(targetX.coerceIn(-maxX, maxX), targetY.coerceIn(-maxY, maxY)), tween(300)) }
-                              }
-                          }
+                      detectTapGestures(onDoubleTap = { 
+                          if (scale > 1f) { scale = 1f; offset = Offset.Zero } 
+                          else { scale = 3f; offset = Offset.Zero } // Instant zoom to center
                       })
                   }.pointerInput(Unit) {
                       detectTransformGestures { _, pan, zoom, _ ->
-                          scope.launch {
-                              val newScale = (scale.value * zoom).coerceIn(1f, 5f)
-                              scale.snapTo(newScale)
-                              if (newScale > 1f) {
-                                  val maxX = (size.width * (newScale - 1)) / 2f
-                                  val maxY = (size.height * (newScale - 1)) / 2f
-                                  offset.snapTo(Offset((offset.value.x + pan.x * newScale).coerceIn(-maxX, maxX), (offset.value.y + pan.y * newScale).coerceIn(-maxY, maxY)))
-                              } else { offset.snapTo(Offset.Zero) }
-                          }
+                          scale = (scale * zoom).coerceIn(1f, 5f)
+                          val maxX = (size.width * (scale - 1)) / 2f
+                          val maxY = (size.height * (scale - 1)) / 2f
+                          if (scale > 1f) {
+                              offset = Offset((offset.x + pan.x).coerceIn(-maxX, maxX), (offset.y + pan.y).coerceIn(-maxY, maxY))
+                          } else { offset = Offset.Zero }
                       }
                   }.pointerInput(Unit) {
-                      detectDragGestures(
+                      // VERTICAL DRAG FIX: Explicitly handle up/down swipe to dismiss without conflicting with Pager
+                      detectVerticalDragGestures(
                           onDragEnd = {
-                              if (scale.value == 1f) {
-                                  if (dragOffsetY > 250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onBack() }
-                                  else if (dragOffsetY < -250f) {
+                              if (scale == 1f) {
+                                  if (dragOffsetY > 250f || dragOffsetY < -250f) { 
                                       haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                      context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type=if(media.isVideo) "video/*" else "image/*"; putExtra(Intent.EXTRA_STREAM, Uri.parse(media.uri)); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, "Share"))
-                                      onBack()
-                                  }
-                                  dragOffsetY = 0f
+                                      onBack() 
+                                  } else dragOffsetY = 0f
                               }
-                          }, onDrag = { change, amt -> if(scale.value==1f) { change.consume(); dragOffsetY += amt.y } }
+                          },
+                          onVerticalDrag = { change, amount -> 
+                              if (scale == 1f) { 
+                                  change.consume()
+                                  dragOffsetY += amount 
+                              } 
+                          }
                       )
                   }, contentAlignment = Alignment.Center) {
-                  val mod = Modifier.fillMaxSize().offset{IntOffset(0, dragOffsetY.roundToInt())}.graphicsLayer(scaleX=scale.value, scaleY=scale.value, translationX=offset.value.x, translationY=offset.value.y)
+                  
+                  val mod = Modifier.fillMaxSize().offset{IntOffset(0, dragOffsetY.roundToInt())}.graphicsLayer(scaleX=scale, scaleY=scale, translationX=offset.x, translationY=offset.y)
+                  
                   if (media.isVideo) {
                       val exoPlayer = remember { ExoPlayer.Builder(context).build().apply { setMediaItem(MediaItem.fromUri(media.uri)); prepare(); playWhenReady = true } }
-                      val lifecycleOwner = LocalLifecycleOwner.current
+                      val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
                       DisposableEffect(lifecycleOwner) {
                           val observer = LifecycleEventObserver { _, event -> 
                               if (event == Lifecycle.Event.ON_PAUSE) exoPlayer.pause()
@@ -450,10 +416,10 @@ jobs:
           gradle-version: '8.7'
           cache-disabled: true 
 
-      - name: Compile and Build APK (The Engine)
+      - name: Compile and Build APK
         run: gradle assembleDebug --no-daemon --refresh-dependencies --stacktrace
 
-      - name: Upload Final APK (Download from here)
+      - name: Upload Final APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
