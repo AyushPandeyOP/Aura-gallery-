@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode V16 - Bug Free) 💀🔥
+name: Aura Gallery (God Mode V17 - The 10000% Fix) 💀🔥
 
 on:
   push:
@@ -65,7 +65,7 @@ jobs:
           <resources><string name="app_name">Aura Gallery</string></resources>
           EOF
 
-          # V16 BUG FIXED ENGINE (Immersive Mode + Zoom Fix + Scroll Memory)
+          # V17 ULTIMATE FLAWLESS ENGINE 💀 (Zoom bounds + Immersive + Crossfade + DoubleTap Origin + Insets)
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           package com.aura.gallery
           import android.Manifest
@@ -89,6 +89,7 @@ jobs:
           import androidx.compose.runtime.*
           import androidx.compose.ui.*
           import androidx.compose.ui.draw.*
+          import androidx.compose.ui.geometry.Offset
           import androidx.compose.ui.graphics.*
           import androidx.compose.ui.hapticfeedback.HapticFeedbackType
           import androidx.compose.ui.input.pointer.pointerInput
@@ -103,6 +104,7 @@ jobs:
           import androidx.media3.exoplayer.ExoPlayer
           import androidx.media3.ui.PlayerView
           import coil.compose.AsyncImage
+          import coil.request.ImageRequest
           import dev.chrisbanes.haze.*
           import kotlinx.coroutines.*
           import kotlin.math.*
@@ -118,12 +120,11 @@ jobs:
                       val haptic = LocalHapticFeedback.current
                       val view = LocalView.current
                       val window = (context as Activity).window
+                      val scope = rememberCoroutineScope()
                       var mediaList by remember { mutableStateOf<List<Media>>(emptyList()) }
                       var hasPerm by remember { mutableStateOf(false) }
                       var screen by remember { mutableStateOf("GALLERY") }
                       var selMedia by remember { mutableStateOf<Media?>(null) }
-                      
-                      // BUG FIX 4: Scroll State Memory 
                       val gridState = rememberLazyGridState()
                       
                       if (screen != "GALLERY") BackHandler { screen = "GALLERY" }
@@ -151,14 +152,10 @@ jobs:
                           }
                       }
                       
-                      // BUG FIX 2 & 3: Immersive Mode & Keep Screen On for Photo/Video
                       DisposableEffect(screen) {
                           if (screen == "PHOTO") {
                               window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                              WindowCompat.getInsetsController(window, view).apply {
-                                  hide(WindowInsetsCompat.Type.systemBars())
-                                  systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                              }
+                              WindowCompat.getInsetsController(window, view).apply { hide(WindowInsetsCompat.Type.systemBars()); systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE }
                           } else {
                               window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                               WindowCompat.getInsetsController(window, view).show(WindowInsetsCompat.Type.systemBars())
@@ -167,13 +164,15 @@ jobs:
                       }
 
                       val hazeState = remember { HazeState() }
+                      val navBarPad = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                      
                       Box(modifier = Modifier.fillMaxSize().background(Color(0xFF050505))) {
                           if (screen == "GALLERY") {
                               if (mediaList.isEmpty() && hasPerm) CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
-                              else LazyVerticalGrid(state = gridState, columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top=110.dp, bottom=120.dp)) { 
+                              else LazyVerticalGrid(state = gridState, columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top=110.dp, bottom=120.dp+navBarPad)) { 
                                   items(mediaList) { media -> 
                                       Box(modifier = Modifier.aspectRatio(1f).padding(1.dp).clickable { selMedia=media; screen="PHOTO" }, contentAlignment=Alignment.Center) {
-                                          AsyncImage(model=media.uri, contentDescription=null, contentScale=ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                                          AsyncImage(model=ImageRequest.Builder(context).data(media.uri).crossfade(true).build(), contentDescription=null, contentScale=ContentScale.Crop, modifier = Modifier.fillMaxSize())
                                           if (media.isVideo) Icon(Icons.Default.PlayArrow, null, tint=Color.White, modifier=Modifier.size(30.dp).shadow(5.dp))
                                       }
                                   } 
@@ -189,49 +188,72 @@ jobs:
                                   val anim = rememberInfiniteTransition(label="glow")
                                   val alpha by anim.animateFloat(0.2f, 1f, infiniteRepeatable(tween(1500), RepeatMode.Reverse), label="alpha")
                                   Text("Developed By Pandey Ji 👑", color=Color(0xFFFFD700).copy(alpha=alpha), style=TextStyle(shadow=Shadow(Color(0xFFFFD700), blurRadius=30f*alpha)), fontSize=18.sp, fontWeight=FontWeight.ExtraBold)
-                                  Spacer(Modifier.height(110.dp))
+                                  Spacer(Modifier.height(110.dp+navBarPad))
                               }
                           }
                           
                           if (screen == "PHOTO" && selMedia != null) {
-                              var offsetY by remember { mutableStateOf(0f) }
-                              var scale by remember { mutableStateOf(1f) }
-                              val bgAlpha by animateFloatAsState(1f - (abs(offsetY)/800f).coerceIn(0f, 1f), label="a")
+                              val scale = remember { Animatable(1f) }
+                              val offset = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
+                              var dragOffsetY by remember { mutableStateOf(0f) }
+                              val bgAlpha by animateFloatAsState(1f - (abs(dragOffsetY)/800f).coerceIn(0f, 1f), label="a")
                               
                               Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha=bgAlpha))
-                              // BUG FIX 1: Double Tap to Zoom
                               .pointerInput(Unit) {
-                                  detectTapGestures(onDoubleTap = { scale = if (scale > 1f) 1f else 2.5f })
-                              }
-                              .pointerInput(Unit) {
+                                  detectTapGestures(onDoubleTap = { tapOffset -> 
+                                      scope.launch {
+                                          if (scale.value > 1f) {
+                                              launch { scale.animateTo(1f, tween(300)) }
+                                              launch { offset.animateTo(Offset.Zero, tween(300)) }
+                                          } else {
+                                              val cX = size.width / 2f
+                                              val cY = size.height / 2f
+                                              val tX = (cX - tapOffset.x) * 2f
+                                              val tY = (cY - tapOffset.y) * 2f
+                                              launch { scale.animateTo(3f, tween(300)) }
+                                              launch { offset.animateTo(Offset(tX, tY), tween(300)) }
+                                          }
+                                      }
+                                  })
+                              }.pointerInput(Unit) {
                                   detectTransformGestures { _, pan, zoom, _ -> 
-                                      scale = (scale * zoom).coerceIn(1f, 5f)
+                                      scope.launch {
+                                          val newScale = (scale.value * zoom).coerceIn(1f, 5f)
+                                          scale.snapTo(newScale)
+                                          if (newScale > 1f) {
+                                              val maxX = (size.width * (newScale - 1)) / 2f
+                                              val maxY = (size.height * (newScale - 1)) / 2f
+                                              val newX = (offset.value.x + pan.x * newScale).coerceIn(-maxX, maxX)
+                                              val newY = (offset.value.y + pan.y * newScale).coerceIn(-maxY, maxY)
+                                              offset.snapTo(Offset(newX, newY))
+                                          } else { offset.snapTo(Offset.Zero) }
+                                      }
                                   }
                               }.pointerInput(Unit) {
                                   detectDragGestures(
                                       onDragEnd = {
-                                          if (scale == 1f) {
-                                              if (offsetY > 250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="GALLERY" }
-                                              else if (offsetY < -250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type=if(selMedia!!.isVideo) "video/*" else "image/*"; putExtra(Intent.EXTRA_STREAM, Uri.parse(selMedia!!.uri)); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, "Share")); screen="GALLERY" }
-                                              offsetY = 0f
+                                          if (scale.value == 1f) {
+                                              if (dragOffsetY > 250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="GALLERY" }
+                                              else if (dragOffsetY < -250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type=if(selMedia!!.isVideo) "video/*" else "image/*"; putExtra(Intent.EXTRA_STREAM, Uri.parse(selMedia!!.uri)); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, "Share")); screen="GALLERY" }
+                                              dragOffsetY = 0f
                                           }
-                                      }, onDrag = { change, amt -> if(scale<=1f) { change.consume(); offsetY += amt.y } }
+                                      }, onDrag = { change, amt -> if(scale.value==1f) { change.consume(); dragOffsetY += amt.y } }
                                   )
                               }, contentAlignment = Alignment.Center) { 
-                                  val mod = Modifier.fillMaxSize().offset{IntOffset(0, offsetY.roundToInt())}.graphicsLayer(scaleX=scale, scaleY=scale)
+                                  val mod = Modifier.fillMaxSize().offset{IntOffset(0, dragOffsetY.roundToInt())}.graphicsLayer(scaleX=scale.value, scaleY=scale.value, translationX=offset.value.x, translationY=offset.value.y)
                                   if (selMedia!!.isVideo) {
                                       val exoPlayer = remember { ExoPlayer.Builder(context).build().apply { setMediaItem(MediaItem.fromUri(selMedia!!.uri)); prepare(); playWhenReady = true } }
                                       DisposableEffect(Unit) { onDispose { exoPlayer.release() } }
                                       AndroidView(factory = { PlayerView(context).apply { player = exoPlayer; useController = true } }, modifier = mod)
                                   } else {
-                                      AsyncImage(model=selMedia!!.uri, contentDescription=null, contentScale=ContentScale.Fit, modifier = mod) 
+                                      AsyncImage(model=ImageRequest.Builder(context).data(selMedia!!.uri).crossfade(true).build(), contentDescription=null, contentScale=ContentScale.Fit, modifier = mod) 
                                   }
                               }
                           }
                           
                           if (screen != "PHOTO") {
                               Box(modifier = Modifier.align(Alignment.TopCenter).padding(top=40.dp, start=24.dp, end=24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(Color.White.copy(0.1f), 30.dp, 0.05f))) { Row(modifier = Modifier.fillMaxSize().padding(horizontal=16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Search, null, tint=Color.Gray); Text("Smart Search...", color=Color.Gray, fontSize=16.sp, modifier=Modifier.weight(1f).padding(start=12.dp)); Icon(Icons.Default.Person, null, tint=Color.White.copy(0.8f)) } }
-                              Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom=36.dp, start=30.dp, end=30.dp).fillMaxWidth().height(65.dp).shadow(15.dp, RoundedCornerShape(30.dp)).hazeChild(hazeState, RoundedCornerShape(30.dp), HazeStyle(Color.White.copy(0.15f), 40.dp, 0.05f))) { Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) { IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="GALLERY"}) { Icon(Icons.Default.Home, null, tint=if(screen=="GALLERY") Color.White else Color.Gray) }; IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="EXPLORE"}) { Icon(Icons.Default.Search, null, tint=if(screen=="EXPLORE") Color.White else Color.Gray) }; IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="STUDIO"}) { Icon(Icons.Default.Create, null, tint=if(screen=="STUDIO") Color.White else Color.Gray) }; IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="VAULT"}) { Icon(Icons.Default.Lock, null, tint=if(screen=="VAULT") Color.White else Color.Gray) } } }
+                              Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom=36.dp+navBarPad, start=30.dp, end=30.dp).fillMaxWidth().height(65.dp).shadow(15.dp, RoundedCornerShape(30.dp)).hazeChild(hazeState, RoundedCornerShape(30.dp), HazeStyle(Color.White.copy(0.15f), 40.dp, 0.05f))) { Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) { IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="GALLERY"}) { Icon(Icons.Default.Home, null, tint=if(screen=="GALLERY") Color.White else Color.Gray) }; IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="EXPLORE"}) { Icon(Icons.Default.Search, null, tint=if(screen=="EXPLORE") Color.White else Color.Gray) }; IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="STUDIO"}) { Icon(Icons.Default.Create, null, tint=if(screen=="STUDIO") Color.White else Color.Gray) }; IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="VAULT"}) { Icon(Icons.Default.Lock, null, tint=if(screen=="VAULT") Color.White else Color.Gray) } } }
                           }
                       }
                   }
