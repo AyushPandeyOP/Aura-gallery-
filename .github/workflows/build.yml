@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode V15) 💀🔥
+name: Aura Gallery (God Mode V16 - Bug Free) 💀🔥
 
 on:
   push:
@@ -65,10 +65,11 @@ jobs:
           <resources><string name="app_name">Aura Gallery</string></resources>
           EOF
 
-          # V15 EXOPLAYER + ZOOM ENGINE 💀
+          # V16 BUG FIXED ENGINE (Immersive Mode + Zoom Fix + Scroll Memory)
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           package com.aura.gallery
           import android.Manifest
+          import android.app.Activity
           import android.content.*
           import android.net.Uri
           import android.os.*
@@ -97,7 +98,7 @@ jobs:
           import androidx.compose.ui.text.font.FontWeight
           import androidx.compose.ui.unit.*
           import androidx.compose.ui.viewinterop.AndroidView
-          import androidx.core.view.WindowCompat
+          import androidx.core.view.*
           import androidx.media3.common.MediaItem
           import androidx.media3.exoplayer.ExoPlayer
           import androidx.media3.ui.PlayerView
@@ -115,10 +116,15 @@ jobs:
                   setContent {
                       val context = LocalContext.current
                       val haptic = LocalHapticFeedback.current
+                      val view = LocalView.current
+                      val window = (context as Activity).window
                       var mediaList by remember { mutableStateOf<List<Media>>(emptyList()) }
                       var hasPerm by remember { mutableStateOf(false) }
                       var screen by remember { mutableStateOf("GALLERY") }
                       var selMedia by remember { mutableStateOf<Media?>(null) }
+                      
+                      // BUG FIX 4: Scroll State Memory 
+                      val gridState = rememberLazyGridState()
                       
                       if (screen != "GALLERY") BackHandler { screen = "GALLERY" }
                       val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { hasPerm = it.values.all { true } }
@@ -138,21 +144,33 @@ jobs:
                                   cursor?.use { c ->
                                       val idCol = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
                                       val typeCol = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MEDIA_TYPE)
-                                      while (c.moveToNext()) {
-                                          val contentUri = ContentUris.withAppendedId(MediaStore.Files.getContentUri("external"), c.getLong(idCol)).toString()
-                                          val isVid = c.getInt(typeCol) == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO
-                                          list.add(Media(contentUri, isVid))
-                                      }
+                                      while (c.moveToNext()) list.add(Media(ContentUris.withAppendedId(MediaStore.Files.getContentUri("external"), c.getLong(idCol)).toString(), c.getInt(typeCol) == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO))
                                   }
                                   mediaList = list
                               }
                           }
                       }
+                      
+                      // BUG FIX 2 & 3: Immersive Mode & Keep Screen On for Photo/Video
+                      DisposableEffect(screen) {
+                          if (screen == "PHOTO") {
+                              window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                              WindowCompat.getInsetsController(window, view).apply {
+                                  hide(WindowInsetsCompat.Type.systemBars())
+                                  systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                              }
+                          } else {
+                              window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                              WindowCompat.getInsetsController(window, view).show(WindowInsetsCompat.Type.systemBars())
+                          }
+                          onDispose { window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); WindowCompat.getInsetsController(window, view).show(WindowInsetsCompat.Type.systemBars()) }
+                      }
+
                       val hazeState = remember { HazeState() }
                       Box(modifier = Modifier.fillMaxSize().background(Color(0xFF050505))) {
                           if (screen == "GALLERY") {
                               if (mediaList.isEmpty() && hasPerm) CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
-                              else LazyVerticalGrid(columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top=110.dp, bottom=120.dp)) { 
+                              else LazyVerticalGrid(state = gridState, columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top=110.dp, bottom=120.dp)) { 
                                   items(mediaList) { media -> 
                                       Box(modifier = Modifier.aspectRatio(1f).padding(1.dp).clickable { selMedia=media; screen="PHOTO" }, contentAlignment=Alignment.Center) {
                                           AsyncImage(model=media.uri, contentDescription=null, contentScale=ContentScale.Crop, modifier = Modifier.fillMaxSize())
@@ -180,12 +198,14 @@ jobs:
                               var scale by remember { mutableStateOf(1f) }
                               val bgAlpha by animateFloatAsState(1f - (abs(offsetY)/800f).coerceIn(0f, 1f), label="a")
                               
-                              Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha=bgAlpha)).pointerInput(Unit) {
+                              Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha=bgAlpha))
+                              // BUG FIX 1: Double Tap to Zoom
+                              .pointerInput(Unit) {
+                                  detectTapGestures(onDoubleTap = { scale = if (scale > 1f) 1f else 2.5f })
+                              }
+                              .pointerInput(Unit) {
                                   detectTransformGestures { _, pan, zoom, _ -> 
                                       scale = (scale * zoom).coerceIn(1f, 5f)
-                                      if (scale == 1f) {
-                                          offsetY += pan.y
-                                      }
                                   }
                               }.pointerInput(Unit) {
                                   detectDragGestures(
@@ -195,7 +215,7 @@ jobs:
                                               else if (offsetY < -250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type=if(selMedia!!.isVideo) "video/*" else "image/*"; putExtra(Intent.EXTRA_STREAM, Uri.parse(selMedia!!.uri)); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, "Share")); screen="GALLERY" }
                                               offsetY = 0f
                                           }
-                                      }, onDrag = { change, amt -> if(scale==1f) { change.consume(); offsetY += amt.y } }
+                                      }, onDrag = { change, amt -> if(scale<=1f) { change.consume(); offsetY += amt.y } }
                                   )
                               }, contentAlignment = Alignment.Center) { 
                                   val mod = Modifier.fillMaxSize().offset{IntOffset(0, offsetY.roundToInt())}.graphicsLayer(scaleX=scale, scaleY=scale)
