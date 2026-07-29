@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode V13) 💀🔥
+name: Aura Gallery (God Mode V14) 💀🔥
 
 on:
   push:
@@ -64,257 +64,124 @@ jobs:
           <resources><string name="app_name">Aura Gallery</string></resources>
           EOF
 
-          # V13 MONSTER ENGINE (FIXED ICONS & IMPORTS)
+          # COMPRESSED V14 MAIN CODE (To fit your mobile clipboard perfectly)
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           package com.aura.gallery
-          
           import android.Manifest
-          import android.content.ContentUris
-          import android.content.Intent
+          import android.content.*
           import android.net.Uri
-          import android.os.Build
-          import android.os.Bundle
+          import android.os.*
           import android.provider.MediaStore
           import androidx.activity.ComponentActivity
-          import androidx.activity.compose.BackHandler
-          import androidx.activity.compose.setContent
-          import androidx.activity.compose.rememberLauncherForActivityResult
+          import androidx.activity.compose.*
           import androidx.activity.result.contract.ActivityResultContracts
           import androidx.compose.animation.core.*
-          import androidx.compose.foundation.background
-          import androidx.compose.foundation.clickable
+          import androidx.compose.foundation.*
           import androidx.compose.foundation.gestures.detectDragGestures
           import androidx.compose.foundation.layout.*
           import androidx.compose.foundation.lazy.grid.*
           import androidx.compose.foundation.shape.RoundedCornerShape
           import androidx.compose.material.icons.Icons
-          import androidx.compose.material.icons.filled.Create
-          import androidx.compose.material.icons.filled.Home
-          import androidx.compose.material.icons.filled.Lock
-          import androidx.compose.material.icons.filled.Person
-          import androidx.compose.material.icons.filled.Search
-          import androidx.compose.material.icons.filled.Settings
+          import androidx.compose.material.icons.filled.*
           import androidx.compose.material3.*
           import androidx.compose.runtime.*
-          import androidx.compose.ui.Alignment
-          import androidx.compose.ui.Modifier
-          import androidx.compose.ui.draw.scale
-          import androidx.compose.ui.draw.shadow
-          import androidx.compose.ui.graphics.Color
-          import androidx.compose.ui.graphics.Shadow
+          import androidx.compose.ui.*
+          import androidx.compose.ui.draw.*
+          import androidx.compose.ui.graphics.*
           import androidx.compose.ui.hapticfeedback.HapticFeedbackType
           import androidx.compose.ui.input.pointer.pointerInput
           import androidx.compose.ui.layout.ContentScale
-          import androidx.compose.ui.platform.LocalContext
-          import androidx.compose.ui.platform.LocalHapticFeedback
+          import androidx.compose.ui.platform.*
           import androidx.compose.ui.text.TextStyle
           import androidx.compose.ui.text.font.FontWeight
-          import androidx.compose.ui.unit.IntOffset
-          import androidx.compose.ui.unit.dp
-          import androidx.compose.ui.unit.sp
+          import androidx.compose.ui.unit.*
           import androidx.core.view.WindowCompat
           import coil.compose.AsyncImage
-          import dev.chrisbanes.haze.HazeState
-          import dev.chrisbanes.haze.haze
-          import dev.chrisbanes.haze.hazeChild
-          import dev.chrisbanes.haze.HazeStyle
-          import kotlinx.coroutines.Dispatchers
-          import kotlinx.coroutines.withContext
-          import kotlin.math.abs
-          import kotlin.math.roundToInt
+          import dev.chrisbanes.haze.*
+          import kotlinx.coroutines.*
+          import kotlin.math.*
 
           class MainActivity : ComponentActivity() {
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
                   WindowCompat.setDecorFitsSystemWindows(window, false)
-
                   setContent {
                       val context = LocalContext.current
                       val haptic = LocalHapticFeedback.current
-                      
                       var photos by remember { mutableStateOf<List<String>>(emptyList()) }
-                      var hasPermission by remember { mutableStateOf(false) }
-                      var activeScreen by remember { mutableStateOf("GALLERY") } 
-                      var selectedPhotoUri by remember { mutableStateOf("") }
-
-                      if (activeScreen != "GALLERY") {
-                          BackHandler { activeScreen = "GALLERY" }
-                      }
-
-                      val permissionLauncher = rememberLauncherForActivityResult(
-                          ActivityResultContracts.RequestPermission()
-                      ) { isGranted -> hasPermission = isGranted }
-
-                      LaunchedEffect(Unit) {
-                          val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                              Manifest.permission.READ_MEDIA_IMAGES
-                          } else {
-                              Manifest.permission.READ_EXTERNAL_STORAGE
-                          }
-                          permissionLauncher.launch(permission)
-                      }
-
-                      LaunchedEffect(hasPermission) {
-                          if (hasPermission) {
+                      var hasPerm by remember { mutableStateOf(false) }
+                      var screen by remember { mutableStateOf("GALLERY") }
+                      var selUri by remember { mutableStateOf("") }
+                      if (screen != "GALLERY") BackHandler { screen = "GALLERY" }
+                      val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { hasPerm = it }
+                      LaunchedEffect(Unit) { launcher.launch(if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_IMAGES else Manifest.permission.READ_EXTERNAL_STORAGE) }
+                      LaunchedEffect(hasPerm) {
+                          if (hasPerm) {
                               withContext(Dispatchers.IO) {
-                                  val projection = arrayOf(MediaStore.Images.Media._ID)
-                                  val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
-                                  val query = context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projection, null, null, sortOrder)
-                                  val loadedPhotos = mutableListOf<String>()
-                                  query?.use { cursor ->
-                                      val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
-                                      while (cursor.moveToNext()) {
-                                          loadedPhotos.add(ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cursor.getLong(idColumn)).toString())
-                                      }
+                                  val cursor = context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, arrayOf(MediaStore.Images.Media._ID), null, null, "${MediaStore.Images.Media.DATE_ADDED} DESC")
+                                  val list = mutableListOf<String>()
+                                  cursor?.use { c ->
+                                      val idCol = c.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+                                      while (c.moveToNext()) list.add(ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, c.getLong(idCol)).toString())
                                   }
-                                  photos = loadedPhotos
+                                  photos = list
                               }
                           }
                       }
-
                       val hazeState = remember { HazeState() }
-                      
                       Box(modifier = Modifier.fillMaxSize().background(Color(0xFF050505))) {
-                          
-                          if (activeScreen == "GALLERY") {
-                              if (photos.isEmpty() && hasPermission) {
-                                  CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
-                              } else {
-                                  LazyVerticalGrid(
-                                      columns = GridCells.Fixed(4),
-                                      modifier = Modifier.fillMaxSize().haze(state = hazeState),
-                                      contentPadding = PaddingValues(top = 110.dp, bottom = 120.dp) 
-                                  ) {
-                                      items(photos) { uri ->
-                                          AsyncImage(
-                                              model = uri, contentDescription = "Photo", contentScale = ContentScale.Crop,
-                                              modifier = Modifier.aspectRatio(1f).padding(1.dp)
-                                                  .clickable { 
-                                                      selectedPhotoUri = uri
-                                                      activeScreen = "PHOTO"
-                                                  }
-                                          )
-                                      }
-                                  }
-                              }
+                          if (screen == "GALLERY") {
+                              if (photos.isEmpty() && hasPerm) CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
+                              else LazyVerticalGrid(columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top=110.dp, bottom=120.dp)) { items(photos) { uri -> AsyncImage(model=uri, contentDescription=null, contentScale=ContentScale.Crop, modifier = Modifier.aspectRatio(1f).padding(1.dp).clickable { selUri=uri; screen="PHOTO" }) } }
                           }
-
-                          if (activeScreen == "EXPLORE" || activeScreen == "STUDIO" || activeScreen == "VAULT") {
-                              Column(
-                                  modifier = Modifier.fillMaxSize().haze(state = hazeState).padding(24.dp).padding(top = 100.dp),
-                                  horizontalAlignment = Alignment.CenterHorizontally
-                              ) {
-                                  Text(activeScreen, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                                  Spacer(modifier = Modifier.height(20.dp))
+                          if (screen in listOf("EXPLORE", "STUDIO", "VAULT")) {
+                              Column(modifier = Modifier.fillMaxSize().haze(state=hazeState).padding(top=100.dp), horizontalAlignment=Alignment.CenterHorizontally) {
+                                  Text(screen, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                                  Spacer(Modifier.height(20.dp))
                                   Text("Coming in Phase 2... 💀", color = Color.Gray, fontSize = 16.sp)
-                                  
-                                  Spacer(modifier = Modifier.weight(1f))
-                                  
-                                  val infiniteTransition = rememberInfiniteTransition(label = "glow")
-                                  val glowAlpha by infiniteTransition.animateFloat(
-                                      initialValue = 0.2f, targetValue = 1f,
-                                      animationSpec = infiniteRepeatable(tween(1500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-                                      label = "alpha"
-                                  )
-                                  Text(
-                                      text = "Developed By Pandey Ji 👑",
-                                      color = Color(0xFFFFD700).copy(alpha = glowAlpha),
-                                      style = TextStyle(shadow = Shadow(color = Color(0xFFFFD700), blurRadius = 30f * glowAlpha)),
-                                      fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp
-                                  )
-                                  Spacer(modifier = Modifier.height(110.dp))
+                                  Spacer(Modifier.weight(1f))
+                                  val anim = rememberInfiniteTransition(label="glow")
+                                  val alpha by anim.animateFloat(0.2f, 1f, infiniteRepeatable(tween(1500), RepeatMode.Reverse), label="alpha")
+                                  Text("Developed By Pandey Ji 👑", color=Color(0xFFFFD700).copy(alpha=alpha), style=TextStyle(shadow=Shadow(Color(0xFFFFD700), blurRadius=30f*alpha)), fontSize=18.sp, fontWeight=FontWeight.ExtraBold)
+                                  Spacer(Modifier.height(110.dp))
                               }
                           }
-
-                          if (activeScreen == "PHOTO") {
+                          if (screen == "PHOTO") {
                               var offsetY by remember { mutableStateOf(0f) }
-                              val scale by animateFloatAsState(targetValue = if (offsetY > 50f || offsetY < -50f) 0.85f else 1f, label = "scale")
-                              val bgAlpha by animateFloatAsState(targetValue = 1f - (abs(offsetY) / 800f).coerceIn(0f, 1f), label = "alpha")
-
-                              Box(
-                                  modifier = Modifier
-                                      .fillMaxSize()
-                                      .background(Color.Black.copy(alpha = bgAlpha))
-                                      .pointerInput(Unit) {
-                                          detectDragGestures(
-                                              onDragEnd = {
-                                                  if (offsetY > 250f) {
-                                                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                      activeScreen = "GALLERY"
-                                                  } else if (offsetY < -250f) {
-                                                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                      val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                                          type = "image/*"
-                                                          putExtra(Intent.EXTRA_STREAM, Uri.parse(selectedPhotoUri))
-                                                          addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                                      }
-                                                      context.startActivity(Intent.createChooser(shareIntent, "Share Aura Photo"))
-                                                      activeScreen = "GALLERY"
-                                                  }
-                                                  offsetY = 0f
-                                              },
-                                              onDrag = { change, dragAmount ->
-                                                  change.consume()
-                                                  offsetY += dragAmount.y
-                                              }
-                                          )
-                                      },
-                                  contentAlignment = Alignment.Center
-                              ) {
-                                  AsyncImage(
-                                      model = selectedPhotoUri,
-                                      contentDescription = "Full Screen",
-                                      contentScale = ContentScale.Fit,
-                                      modifier = Modifier.fillMaxSize().offset { IntOffset(0, offsetY.roundToInt()) }.scale(scale)
+                              val scale by animateFloatAsState(if (abs(offsetY)>50f) 0.85f else 1f, label="s")
+                              val bgAlpha by animateFloatAsState(1f - (abs(offsetY)/800f).coerceIn(0f, 1f), label="a")
+                              Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha=bgAlpha)).pointerInput(Unit) {
+                                  detectDragGestures(
+                                      onDragEnd = {
+                                          if (offsetY > 250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="GALLERY" }
+                                          else if (offsetY < -250f) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type="image/*"; putExtra(Intent.EXTRA_STREAM, Uri.parse(selUri)); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, "Share")); screen="GALLERY" }
+                                          offsetY = 0f
+                                      }, onDrag = { change, amt -> change.consume(); offsetY += amt.y }
                                   )
-                              }
+                              }, contentAlignment = Alignment.Center) { AsyncImage(model=selUri, contentDescription=null, contentScale=ContentScale.Fit, modifier = Modifier.fillMaxSize().offset{IntOffset(0, offsetY.roundToInt())}.scale(scale)) }
                           }
-
-                          if (activeScreen != "PHOTO") {
-                              Box(
-                                  modifier = Modifier
-                                      .align(Alignment.TopCenter)
-                                      .padding(top = 40.dp, start = 24.dp, end = 24.dp)
-                                      .fillMaxWidth()
-                                      .height(55.dp)
-                                      .shadow(elevation = 10.dp, shape = RoundedCornerShape(25.dp), spotColor = Color.White.copy(alpha = 0.2f))
-                                      .hazeChild(
-                                          state = hazeState, 
-                                          shape = RoundedCornerShape(25.dp), 
-                                          style = HazeStyle(tint = Color.White.copy(alpha = 0.1f), blurRadius = 30.dp, noiseFactor = 0.05f)
-                                      )
-                              ) {
-                                  Row(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                      Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Gray)
-                                      Text("Smart Search...", color = Color.Gray, fontSize = 16.sp, modifier = Modifier.weight(1f).padding(start = 12.dp))
-                                      Icon(Icons.Default.Person, contentDescription = "Sync", tint = Color.White.copy(alpha = 0.8f))
-                                  }
-                              }
+                          if (screen != "PHOTO") {
+                              Box(modifier = Modifier.align(Alignment.TopCenter).padding(top=40.dp, start=24.dp, end=24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(Color.White.copy(0.1f), 30.dp, 0.05f))) { Row(modifier = Modifier.fillMaxSize().padding(horizontal=16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Search, null, tint=Color.Gray); Text("Smart Search...", color=Color.Gray, fontSize=16.sp, modifier=Modifier.weight(1f).padding(start=12.dp)); Icon(Icons.Default.Person, null, tint=Color.White.copy(0.8f)) } }
+                              Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom=36.dp, start=30.dp, end=30.dp).fillMaxWidth().height(65.dp).shadow(15.dp, RoundedCornerShape(30.dp)).hazeChild(hazeState, RoundedCornerShape(30.dp), HazeStyle(Color.White.copy(0.15f), 40.dp, 0.05f))) { Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) { IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="GALLERY"}) { Icon(Icons.Default.Home, null, tint=if(screen=="GALLERY") Color.White else Color.Gray) }; IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="EXPLORE"}) { Icon(Icons.Default.Search, null, tint=if(screen=="EXPLORE") Color.White else Color.Gray) }; IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="STUDIO"}) { Icon(Icons.Default.Create, null, tint=if(screen=="STUDIO") Color.White else Color.Gray) }; IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress); screen="VAULT"}) { Icon(Icons.Default.Lock, null, tint=if(screen=="VAULT") Color.White else Color.Gray) } } }
                           }
+                      }
+                  }
+              }
+          }
+          EOF
 
-                          if (activeScreen != "PHOTO") {
-                              Box(
-                                  modifier = Modifier
-                                      .align(Alignment.BottomCenter)
-                                      .padding(bottom = 36.dp, start = 30.dp, end = 30.dp)
-                                      .fillMaxWidth()
-                                      .height(65.dp)
-                                      .shadow(elevation = 15.dp, shape = RoundedCornerShape(30.dp), spotColor = Color.White.copy(alpha = 0.5f), ambientColor = Color.White.copy(alpha = 0.5f))
-                                      .hazeChild(
-                                          state = hazeState, 
-                                          shape = RoundedCornerShape(30.dp), 
-                                          style = HazeStyle(tint = Color.White.copy(alpha = 0.15f), blurRadius = 40.dp, noiseFactor = 0.05f)
-                                      )
-                              ) {
-                                  Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                                      IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); activeScreen = "GALLERY" }) { 
-                                          Icon(Icons.Default.Home, contentDescription = "Photos", tint = if(activeScreen=="GALLERY") Color.White else Color.Gray) 
-                                      }
-                                      IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); activeScreen = "EXPLORE" }) { 
-                                          Icon(Icons.Default.Search, contentDescription = "Explore", tint = if(activeScreen=="EXPLORE") Color.White else Color.Gray) 
-                                      }
-                                      IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); activeScreen = "STUDIO" }) { 
-                                          Icon(Icons.Default.Create, contentDescription = "AI Studio", tint = if(activeScreen=="STUDIO") Color.White else Color.Gray) 
-                                      }
-                                      IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); activeScreen = "VAULT" }) { 
-                                          Icon(Icons.Default.Lock, contentDescription = "Vault", tint = if(activeScreen=="VAULT") Color.White else Color.Gray) 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+          cache-disabled: true 
+
+      - name: Compile and Build APK (The Engine)
+        run: gradle assembleDebug --no-daemon --refresh-dependencies --stacktrace
+
+      - name: Upload Final APK (Download from here)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AuraGallery-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
