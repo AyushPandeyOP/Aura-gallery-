@@ -1,4 +1,4 @@
-name: Aura Gallery (God Mode V21 - The Final Fix) 💀🔥
+name: Aura Gallery (God Mode V22 - Multi-File Engine) 💀🔥
 
 on:
   push:
@@ -16,12 +16,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build Android Project from Scratch 🪄
+      - name: Build Android Project from Multi-Files 🪄
         run: |
           mkdir -p app/src/main/java/com/aura/gallery
           mkdir -p app/src/main/res/values
 
-          # RAM BOOST
           cat << 'EOF' > gradle.properties
           android.useAndroidX=true
           android.nonTransitiveRClass=true
@@ -41,7 +40,7 @@ jobs:
 
           cat << 'EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
-          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "2.1" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
+          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "2.2" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
           dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("androidx.compose.foundation:foundation"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0"); implementation("androidx.media3:media3-exoplayer:1.2.1"); implementation("androidx.media3:media3-ui:1.2.1") }
           EOF
 
@@ -66,7 +65,120 @@ jobs:
           <resources><string name="app_name">Aura Gallery</string></resources>
           EOF
 
-          # V21 SYNTAX FIXED 💀 (OptIn is exactly at the top where it belongs)
+          # FILE 1: Media Model
+          cat << 'EOF' > app/src/main/java/com/aura/gallery/MediaModel.kt
+          package com.aura.gallery
+          data class Media(val uri: String, val isVideo: Boolean)
+          EOF
+
+          # FILE 2: UI Components (TopBar, Glowing Fluid Dock, Settings Hub)
+          cat << 'EOF' > app/src/main/java/com/aura/gallery/Components.kt
+          @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+          package com.aura.gallery
+
+          import androidx.compose.animation.core.*
+          import androidx.compose.foundation.*
+          import androidx.compose.foundation.gestures.*
+          import androidx.compose.foundation.layout.*
+          import androidx.compose.foundation.shape.RoundedCornerShape
+          import androidx.compose.material.icons.Icons
+          import androidx.compose.material.icons.filled.*
+          import androidx.compose.material3.*
+          import androidx.compose.runtime.*
+          import androidx.compose.ui.*
+          import androidx.compose.ui.draw.*
+          import androidx.compose.ui.graphics.*
+          import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+          import androidx.compose.ui.input.pointer.pointerInput
+          import androidx.compose.ui.platform.*
+          import androidx.compose.ui.text.TextStyle
+          import androidx.compose.ui.text.font.FontWeight
+          import androidx.compose.ui.unit.*
+          import dev.chrisbanes.haze.*
+          import kotlin.math.*
+
+          @Composable
+          fun PandeyJiGlow() {
+              val anim = rememberInfiniteTransition(label="glow")
+              val alpha by anim.animateFloat(0.2f, 1f, infiniteRepeatable(tween(1500), RepeatMode.Reverse), label="alpha")
+              Text("Developed By Pandey Ji 👑", color=Color(0xFFFFD700).copy(alpha=alpha), style=TextStyle(shadow=Shadow(Color(0xFFFFD700), blurRadius=30f*alpha)), fontSize=18.sp, fontWeight=FontWeight.ExtraBold)
+          }
+
+          @Composable
+          fun TopBar(screen: String, hazeState: HazeState, blurVal: Float, modifier: Modifier, onProfileClick: () -> Unit) {
+              val haptic = LocalHapticFeedback.current
+              Box(modifier = modifier.padding(top=40.dp, start=24.dp, end=24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(tint=Color.White.copy(alpha=0.1f), blurRadius=blurVal.dp, noiseFactor=0.05f))) {
+                  Row(modifier = Modifier.fillMaxSize().padding(horizontal=16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                      Icon(Icons.Default.Search, null, tint=Color.Gray)
+                      Text("Smart Search...", color=Color.Gray, fontSize=16.sp, modifier=Modifier.weight(1f).padding(start=12.dp))
+                      IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onProfileClick() }) {
+                          Icon(Icons.Default.Person, null, tint = if(screen=="SETTINGS") Color(0xFFFFD700) else Color.White.copy(alpha=0.8f))
+                      }
+                  }
+              }
+          }
+
+          @Composable
+          fun SettingsHub(blurVal: Float, onBlurChange: (Float) -> Unit, hazeState: HazeState) {
+              Column(modifier = Modifier.fillMaxSize().haze(state=hazeState).padding(24.dp).padding(top=110.dp, bottom=100.dp), horizontalAlignment=Alignment.CenterHorizontally) {
+                  Text("AURA SETTINGS", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                  Spacer(Modifier.height(30.dp))
+                  Text("Liquid Glass Blur Level: ${blurVal.toInt()}", color = Color.Gray)
+                  Slider(value = blurVal, onValueChange = onBlurChange, valueRange = 10f..80f, colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White))
+                  Spacer(Modifier.height(20.dp))
+                  Button(onClick = { }, modifier = Modifier.fillMaxWidth().height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF151515))) { Text("Setup Secure Vault PIN", color = Color.White) }
+                  Spacer(Modifier.weight(1f))
+                  PandeyJiGlow()
+              }
+          }
+
+          @Composable
+          fun DummyScreen(screen: String, hazeState: HazeState) {
+              Column(modifier = Modifier.fillMaxSize().haze(state=hazeState).padding(top=120.dp), horizontalAlignment=Alignment.CenterHorizontally) {
+                  Text(screen, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                  Spacer(Modifier.height(20.dp))
+                  Text("Advanced AI Studio & Vault Engine... 💀", color = Color.Gray, fontSize = 16.sp)
+                  Spacer(Modifier.weight(1f))
+                  PandeyJiGlow()
+                  Spacer(Modifier.height(110.dp))
+              }
+          }
+
+          @Composable
+          fun BottomDock(screen: String, hazeState: HazeState, blurVal: Float, modifier: Modifier, onTabSelected: (String) -> Unit) {
+              val haptic = LocalHapticFeedback.current
+              val navBarPad = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+              val tabs = listOf("GALLERY", "EXPLORE", "STUDIO", "VAULT")
+              val tabIcons = listOf(Icons.Default.Home, Icons.Default.Search, Icons.Default.Create, Icons.Default.Lock)
+              val currentIdx = tabs.indexOf(screen).coerceAtLeast(0)
+              var dragOffset by remember { mutableStateOf(0f) }
+              val targetIdx = (currentIdx + (dragOffset / 70f).roundToInt()).coerceIn(0, tabs.size - 1)
+
+              Box(modifier = modifier.padding(bottom=24.dp+navBarPad).widthIn(max = 380.dp).fillMaxWidth(0.85f).height(65.dp)
+                  .shadow(20.dp, RoundedCornerShape(30.dp), spotColor = Color.White.copy(alpha=0.6f))
+                  .hazeChild(hazeState, RoundedCornerShape(30.dp), HazeStyle(tint=Color.White.copy(alpha=0.18f), blurRadius=blurVal.dp, noiseFactor=0.05f)),
+                  contentAlignment = Alignment.Center) {
+                  Row(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
+                      detectHorizontalDragGestures(
+                          onDragEnd = {
+                              if (abs(dragOffset) > 35f) { onTabSelected(tabs[targetIdx]); haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
+                              dragOffset = 0f
+                          },
+                          onHorizontalDrag = { _, amt -> dragOffset += amt }
+                      )
+                  }, horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                      tabIcons.forEachIndexed { idx, icon ->
+                          val isSel = currentIdx == idx
+                          IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onTabSelected(tabs[idx]) }) {
+                              Icon(icon, null, tint = if(isSel) Color.White else Color.Gray)
+                          }
+                      }
+                  }
+              }
+          }
+          EOF
+
+          # FILE 3: MainActivity (Core Engine & Pager)
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
           package com.aura.gallery
@@ -86,9 +198,6 @@ jobs:
           import androidx.compose.foundation.layout.*
           import androidx.compose.foundation.lazy.grid.*
           import androidx.compose.foundation.pager.*
-          import androidx.compose.foundation.shape.RoundedCornerShape
-          import androidx.compose.material.icons.Icons
-          import androidx.compose.material.icons.filled.*
           import androidx.compose.material3.*
           import androidx.compose.runtime.*
           import androidx.compose.ui.*
@@ -99,8 +208,6 @@ jobs:
           import androidx.compose.ui.input.pointer.pointerInput
           import androidx.compose.ui.layout.ContentScale
           import androidx.compose.ui.platform.*
-          import androidx.compose.ui.text.TextStyle
-          import androidx.compose.ui.text.font.FontWeight
           import androidx.compose.ui.unit.*
           import androidx.compose.ui.viewinterop.AndroidView
           import androidx.core.view.*
@@ -113,8 +220,6 @@ jobs:
           import kotlinx.coroutines.*
           import kotlin.math.*
 
-          data class Media(val uri: String, val isVideo: Boolean)
-
           class MainActivity : ComponentActivity() {
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
@@ -126,7 +231,6 @@ jobs:
           @Composable
           fun AuraApp() {
               val context = LocalContext.current
-              val haptic = LocalHapticFeedback.current
               val view = LocalView.current
               val window = (context as Activity).window
               var mediaList by remember { mutableStateOf<List<Media>>(emptyList()) }
@@ -269,85 +373,6 @@ jobs:
                       AndroidView(factory = { ctx -> PlayerView(ctx).apply { player = exoPlayer; useController = true } }, modifier = mod)
                   } else {
                       AsyncImage(model=ImageRequest.Builder(context).data(media.uri).crossfade(true).build(), contentDescription=null, contentScale=ContentScale.Fit, modifier = mod)
-                  }
-              }
-          }
-
-          @Composable
-          fun SettingsHub(blurVal: Float, onBlurChange: (Float) -> Unit, hazeState: HazeState) {
-              Column(modifier = Modifier.fillMaxSize().haze(state=hazeState).padding(24.dp).padding(top=110.dp, bottom=100.dp), horizontalAlignment=Alignment.CenterHorizontally) {
-                  Text("AURA SETTINGS", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                  Spacer(Modifier.height(30.dp))
-                  Text("Liquid Glass Blur Level: ${blurVal.toInt()}", color = Color.Gray)
-                  Slider(value = blurVal, onValueChange = onBlurChange, valueRange = 10f..80f, colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White))
-                  Spacer(Modifier.height(20.dp))
-                  Button(onClick = { }, modifier = Modifier.fillMaxWidth().height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF151515))) { Text("Setup Secure Vault PIN", color = Color.White) }
-                  Spacer(Modifier.weight(1f))
-                  PandeyJiGlow()
-              }
-          }
-
-          @Composable
-          fun DummyScreen(screen: String, hazeState: HazeState) {
-              Column(modifier = Modifier.fillMaxSize().haze(state=hazeState).padding(top=120.dp), horizontalAlignment=Alignment.CenterHorizontally) {
-                  Text(screen, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                  Spacer(Modifier.height(20.dp))
-                  Text("Advanced AI Studio & Vault Engine... 💀", color = Color.Gray, fontSize = 16.sp)
-                  Spacer(Modifier.weight(1f))
-                  PandeyJiGlow()
-                  Spacer(Modifier.height(110.dp))
-              }
-          }
-
-          @Composable
-          fun PandeyJiGlow() {
-              val anim = rememberInfiniteTransition(label="glow")
-              val alpha by anim.animateFloat(0.2f, 1f, infiniteRepeatable(tween(1500), RepeatMode.Reverse), label="alpha")
-              Text("Developed By Pandey Ji 👑", color=Color(0xFFFFD700).copy(alpha=alpha), style=TextStyle(shadow=Shadow(Color(0xFFFFD700), blurRadius=30f*alpha)), fontSize=18.sp, fontWeight=FontWeight.ExtraBold)
-          }
-
-          @Composable
-          fun TopBar(screen: String, hazeState: HazeState, blurVal: Float, modifier: Modifier, onProfileClick: () -> Unit) {
-              val haptic = LocalHapticFeedback.current
-              Box(modifier = modifier.padding(top=40.dp, start=24.dp, end=24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(tint=Color.White.copy(alpha=0.1f), blurRadius=blurVal.dp, noiseFactor=0.05f))) {
-                  Row(modifier = Modifier.fillMaxSize().padding(horizontal=16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                      Icon(Icons.Default.Search, null, tint=Color.Gray)
-                      Text("Smart Search...", color=Color.Gray, fontSize=16.sp, modifier=Modifier.weight(1f).padding(start=12.dp))
-                      IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onProfileClick() }) {
-                          Icon(Icons.Default.Person, null, tint = if(screen=="SETTINGS") Color(0xFFFFD700) else Color.White.copy(alpha=0.8f))
-                      }
-                  }
-              }
-          }
-
-          @Composable
-          fun BottomDock(screen: String, hazeState: HazeState, blurVal: Float, modifier: Modifier, onTabSelected: (String) -> Unit) {
-              val haptic = LocalHapticFeedback.current
-              val navBarPad = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-              val tabs = listOf("GALLERY", "EXPLORE", "STUDIO", "VAULT")
-              val tabIcons = listOf(Icons.Default.Home, Icons.Default.Search, Icons.Default.Create, Icons.Default.Lock)
-              val currentIdx = tabs.indexOf(screen).coerceAtLeast(0)
-              var dragOffset by remember { mutableStateOf(0f) }
-              val targetIdx = (currentIdx + (dragOffset / 70f).roundToInt()).coerceIn(0, tabs.size - 1)
-
-              Box(modifier = modifier.padding(bottom=24.dp+navBarPad).widthIn(max = 380.dp).fillMaxWidth(0.85f).height(65.dp)
-                  .shadow(15.dp, RoundedCornerShape(30.dp), spotColor = Color.White.copy(alpha=0.4f))
-                  .hazeChild(hazeState, RoundedCornerShape(30.dp), HazeStyle(tint=Color.White.copy(alpha=0.15f), blurRadius=blurVal.dp, noiseFactor=0.05f)),
-                  contentAlignment = Alignment.Center) {
-                  Row(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
-                      detectHorizontalDragGestures(
-                          onDragEnd = {
-                              if (abs(dragOffset) > 35f) { onTabSelected(tabs[targetIdx]); haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
-                              dragOffset = 0f
-                          },
-                          onHorizontalDrag = { _, amt -> dragOffset += amt }
-                      )
-                  }, horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                      tabIcons.forEachIndexed { idx, icon ->
-                          IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onTabSelected(tabs[idx]) }) {
-                              Icon(icon, null, tint = if(currentIdx == idx) Color.White else Color.Gray)
-                          }
-                      }
                   }
               }
           }
