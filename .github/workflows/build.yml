@@ -1,4 +1,4 @@
-name: Aura Gallery (V32 - Slide Hide & Perfect Pill) 💀
+name: Aura Gallery (V33 - The Resignation Build) 🏳️
 
 on:
   push:
@@ -40,8 +40,8 @@ jobs:
 
           cat << 'EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
-          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "3.2" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
-          dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("androidx.compose.foundation:foundation"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0"); implementation("androidx.media3:media3-exoplayer:1.2.1"); implementation("androidx.media3:media3-ui:1.2.1"); implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0") }
+          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "3.3" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
+          dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("androidx.compose.foundation:foundation"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0"); implementation("androidx.media3:media3-exoplayer:1.2.1"); implementation("androidx.media3:media3-ui:1.2.1") }
           EOF
 
           cat << 'EOF' > app/src/main/AndroidManifest.xml
@@ -65,19 +65,18 @@ jobs:
           <resources><string name="app_name">Aura Gallery</string></resources>
           EOF
 
-          # FILE 1: Media Model
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MediaModel.kt
           package com.aura.gallery
           data class Media(val uri: String, val isVideo: Boolean)
           EOF
 
-          # FILE 2: UI Components (Slide Hide Fix + Tap Spring Pill Fix)
           cat << 'EOF' > app/src/main/java/com/aura/gallery/Components.kt
           @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
           package com.aura.gallery
 
           import androidx.compose.animation.core.*
           import androidx.compose.foundation.*
+          import androidx.compose.foundation.gestures.*
           import androidx.compose.foundation.layout.*
           import androidx.compose.foundation.shape.RoundedCornerShape
           import androidx.compose.material.icons.Icons
@@ -88,6 +87,7 @@ jobs:
           import androidx.compose.ui.draw.*
           import androidx.compose.ui.graphics.*
           import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+          import androidx.compose.ui.input.pointer.pointerInput
           import androidx.compose.ui.platform.*
           import androidx.compose.ui.text.TextStyle
           import androidx.compose.ui.text.font.FontWeight
@@ -104,7 +104,6 @@ jobs:
           @Composable
           fun TopBar(screen: String, hazeState: HazeState, blurVal: Float, isScrolling: Boolean, modifier: Modifier, onProfileClick: () -> Unit) {
               val haptic = LocalHapticFeedback.current
-              // APPLE STYLE HIDE: Slide Top Bar UP out of screen
               val offsetY by animateDpAsState(targetValue = if(isScrolling) (-100).dp else 0.dp, animationSpec = tween(300), label="topBarSlide")
               Box(modifier = modifier.offset(y = offsetY).padding(top=40.dp, start=24.dp, end=24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(tint=Color.White.copy(alpha=0.1f), blurRadius=blurVal.dp, noiseFactor=0.05f))) {
                   Row(modifier = Modifier.fillMaxSize().padding(horizontal=16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -147,8 +146,6 @@ jobs:
           fun BottomDock(screen: String, hazeState: HazeState, blurVal: Float, isScrolling: Boolean, modifier: Modifier, onTabSelected: (String) -> Unit) {
               val haptic = LocalHapticFeedback.current
               val navBarPad = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-              
-              // APPLE STYLE HIDE: Slide Bottom Dock DOWN out of screen (Removes the Blur bug!)
               val offsetY by animateDpAsState(targetValue = if(isScrolling) 150.dp else 0.dp, animationSpec = tween(300), label="dockSlide")
               
               val tabs = listOf("GALLERY", "EXPLORE", "STUDIO", "VAULT")
@@ -164,7 +161,6 @@ jobs:
                   BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp)) {
                       val tabWidthDp = maxWidth / tabs.size
                       
-                      // SPRING ANIMATION MATH: No dragging bugs, just smooth pure animation on tap
                       val indicatorOffset by animateDpAsState(
                           targetValue = tabWidthDp * currentIdx,
                           animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
@@ -196,7 +192,6 @@ jobs:
           }
           EOF
 
-          # FILE 3: MainActivity (Vertical Drag Fix & Zoom Math Fix)
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
           package com.aura.gallery
@@ -347,8 +342,7 @@ jobs:
           fun MediaViewer(media: Media, onBack: () -> Unit) {
               val context = LocalContext.current
               val haptic = LocalHapticFeedback.current
-              
-              // JITTER FIX: Removed Animatable from zoom gesture for instant 60fps tracking
+              val scope = rememberCoroutineScope()
               var scale by remember { mutableFloatStateOf(1f) }
               var offset by remember { mutableStateOf(Offset.Zero) }
               var dragOffsetY by remember { mutableFloatStateOf(0f) }
@@ -356,9 +350,9 @@ jobs:
 
               Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha=bgAlpha))
                   .pointerInput(Unit) {
-                      detectTapGestures(onDoubleTap = { 
+                      detectTapGestures(onDoubleTap = { tapOffset ->
                           if (scale > 1f) { scale = 1f; offset = Offset.Zero } 
-                          else { scale = 3f; offset = Offset.Zero } // Instant zoom to center
+                          else { scale = 3f; offset = Offset.Zero } 
                       })
                   }.pointerInput(Unit) {
                       detectTransformGestures { _, pan, zoom, _ ->
@@ -370,7 +364,6 @@ jobs:
                           } else { offset = Offset.Zero }
                       }
                   }.pointerInput(Unit) {
-                      // VERTICAL DRAG FIX: Explicitly handle up/down swipe to dismiss without conflicting with Pager
                       detectVerticalDragGestures(
                           onDragEnd = {
                               if (scale == 1f) {
@@ -393,7 +386,10 @@ jobs:
                   
                   if (media.isVideo) {
                       val exoPlayer = remember { ExoPlayer.Builder(context).build().apply { setMediaItem(MediaItem.fromUri(media.uri)); prepare(); playWhenReady = true } }
-                      val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                      
+                      // THE FINAL, CORRECTED, BULLETPROOF LIFECYCLE LINE 🏳️💀
+                      val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+                      
                       DisposableEffect(lifecycleOwner) {
                           val observer = LifecycleEventObserver { _, event -> 
                               if (event == Lifecycle.Event.ON_PAUSE) exoPlayer.pause()
