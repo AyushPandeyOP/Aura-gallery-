@@ -1,8 +1,5 @@
 # Aura-gallery
 
-# Power By Pandey Ji
-
-
 # 🎨 **AURA GALLERY V34 - PHASE 1 COMPLETE**
 
 **Built on God Gemini's V33 Foundation | Production-Ready | Zero Bugs**
@@ -368,7 +365,7 @@ Need help? Check:
 
 **Version:** 3.4 (Phase 1 Complete)  
 **Status:** ✅ Production Ready  
-**Built on:** God Gemini V33  
+**Built by:**  PandeyJi
 **Last Updated:** 2024  
 
 🚀 **READY TO LAUNCH!**
