@@ -1,4 +1,4 @@
-name: Aura Gallery (God Gemini V35 - The Ultimate Liquid Fix) 💀🔥
+name: Aura Gallery (God V36 - The Flawless Fix) 💀🔥
 
 on:
   push:
@@ -41,10 +41,9 @@ jobs:
           plugins { id("com.android.application") version "8.3.2" apply false; id("org.jetbrains.kotlin.android") version "1.9.23" apply false }
           EOF
 
-          # 🔥 ADDED MATERIAL-ICONS-EXTENDED FOR CLAUDE'S FANCY ICONS 🔥
           cat << 'EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
-          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "3.5" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
+          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "3.6" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
           dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("androidx.compose.foundation:foundation"); implementation("androidx.compose.material:material-icons-extended"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0"); implementation("androidx.media3:media3-exoplayer:1.2.1"); implementation("androidx.media3:media3-ui:1.2.1") }
           EOF
 
@@ -94,12 +93,11 @@ jobs:
           enum class ViewMode { ALL_MEDIA, ALBUMS, FAVORITES }
           EOF
 
-          # 🔥 FILE 2: COMPONENTS (EXOPLAYER IMPORTS FIXED TO MEDIA3 + EXTENDED ICONS) 🔥
+          # 🔥 FILE 2: COMPONENTS 🔥
           cat << 'EOF' > app/src/main/java/com/aura/gallery/Components.kt
           @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
           package com.aura.gallery
 
-          import android.graphics.Bitmap
           import androidx.compose.animation.core.*
           import androidx.compose.foundation.*
           import androidx.compose.foundation.gestures.*
@@ -126,8 +124,6 @@ jobs:
           import androidx.compose.ui.viewinterop.AndroidView
           import androidx.lifecycle.Lifecycle
           import androidx.lifecycle.LifecycleEventObserver
-          
-          // 💀 FIXED EXOPLAYER IMPORTS TO MODERN MEDIA3 💀
           import androidx.media3.exoplayer.ExoPlayer
           import androidx.media3.common.MediaItem
           import androidx.media3.ui.PlayerView
@@ -135,12 +131,6 @@ jobs:
           import kotlinx.coroutines.launch
           import kotlin.math.abs
           import kotlin.math.roundToInt
-
-          @Composable
-          fun AdvancedLiquidBlur(hazeState: HazeState, blurVal: Float, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-              val animatedBlur by animateFloatAsState(blurVal, animationSpec = spring(dampingRatio = 0.8f), label = "blur")
-              Box(modifier = modifier.haze(state = hazeState)) { content() }
-          }
 
           @Composable
           fun PandeyJiGlow() {
@@ -319,7 +309,7 @@ jobs:
           }
           EOF
 
-          # 🔥 FILE 3: MAIN ACTIVITY 🔥
+          # 🔥 FILE 3: MAIN ACTIVITY (ALL IMPORTS FIXED) 🔥
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           package com.aura.gallery
 
@@ -332,7 +322,6 @@ jobs:
           import androidx.activity.result.contract.ActivityResultContracts
           import androidx.compose.foundation.background
           import androidx.compose.foundation.layout.*
-          import androidx.compose.foundation.lazy.grid.LazyGridState
           import androidx.compose.foundation.lazy.grid.rememberLazyGridState
           import androidx.compose.material3.Scaffold
           import androidx.compose.runtime.*
@@ -348,6 +337,9 @@ jobs:
           import androidx.compose.material3.Button
           import androidx.compose.material3.ButtonDefaults
           import androidx.compose.material3.Text
+          import android.content.ContentUris
+          import kotlinx.coroutines.Dispatchers
+          import kotlinx.coroutines.withContext
 
           class MainActivity : ComponentActivity() {
               private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted -> updatePermissionStatus(isGranted) }
@@ -376,7 +368,7 @@ jobs:
               var selIndex by remember { mutableStateOf(0) }
               var isFullScreen by remember { mutableStateOf(false) }
               var blurVal by remember { mutableFloatStateOf(40f) }
-              var gridState by remember { mutableStateOf(LazyGridState()) }
+              val gridState = rememberLazyGridState()
               var viewMode by remember { mutableStateOf(ViewMode.ALL_MEDIA) }
               var searchQuery by remember { mutableStateOf("") }
               val hazeState = remember { HazeState() }
@@ -386,30 +378,32 @@ jobs:
                   if (hasPerm) {
                       val media = mutableListOf<Media>()
                       val albums = mutableMapOf<Long, Album>()
-                      val cursor = context.contentResolver.query(
-                          MediaStore.Files.getContentUri("external"),
-                          arrayOf(MediaStore.Files.FileColumns._ID, MediaStore.Files.FileColumns.DATA, MediaStore.Files.FileColumns.MEDIA_TYPE, MediaStore.Files.FileColumns.BUCKET_ID, MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME, MediaStore.Files.FileColumns.DATE_MODIFIED, MediaStore.Files.FileColumns.DISPLAY_NAME),
-                          "${MediaStore.Files.FileColumns.MEDIA_TYPE} = ? OR ${MediaStore.Files.FileColumns.MEDIA_TYPE} = ?",
-                          arrayOf(MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE.toString(), MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO.toString()),
-                          "${MediaStore.Files.FileColumns.DATE_MODIFIED} DESC"
-                      )
-                      cursor?.use {
-                          val idCol = it.getColumnIndex(MediaStore.Files.FileColumns._ID)
-                          val typeCol = it.getColumnIndex(MediaStore.Files.FileColumns.MEDIA_TYPE)
-                          val bucketIdCol = it.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_ID)
-                          val bucketNameCol = it.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
-                          val dateCol = it.getColumnIndex(MediaStore.Files.FileColumns.DATE_MODIFIED)
-                          val nameCol = it.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
-                          while (it.moveToNext()) {
-                              val id = it.getLong(idCol)
-                              val type = it.getInt(typeCol)
-                              val bucketId = it.getLong(bucketIdCol)
-                              val bucketName = it.getString(bucketNameCol) ?: "Camera"
-                              val timestamp = it.getLong(dateCol)
-                              val displayName = it.getString(nameCol) ?: ""
-                              val uri = if (type == MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE) MediaStore.Images.Media.EXTERNAL_CONTENT_URI.buildUpon().appendPath(id.toString()).build().toString() else MediaStore.Video.Media.EXTERNAL_CONTENT_URI.buildUpon().appendPath(id.toString()).build().toString()
-                              media.add(Media(uri = uri, isVideo = type == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO, bucketName = bucketName, bucketId = bucketId, timestamp = timestamp, displayName = displayName))
-                              if (!albums.containsKey(bucketId)) albums[bucketId] = Album(bucketId = bucketId, bucketName = bucketName, thumbnailUri = uri, count = 1, lastModified = timestamp) else albums[bucketId] = albums[bucketId]!!.copy(count = albums[bucketId]!!.count + 1)
+                      withContext(Dispatchers.IO) {
+                          val cursor = context.contentResolver.query(
+                              MediaStore.Files.getContentUri("external"),
+                              arrayOf(MediaStore.Files.FileColumns._ID, MediaStore.Files.FileColumns.DATA, MediaStore.Files.FileColumns.MEDIA_TYPE, MediaStore.Files.FileColumns.BUCKET_ID, MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME, MediaStore.Files.FileColumns.DATE_MODIFIED, MediaStore.Files.FileColumns.DISPLAY_NAME),
+                              "${MediaStore.Files.FileColumns.MEDIA_TYPE} = ? OR ${MediaStore.Files.FileColumns.MEDIA_TYPE} = ?",
+                              arrayOf(MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE.toString(), MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO.toString()),
+                              "${MediaStore.Files.FileColumns.DATE_MODIFIED} DESC"
+                          )
+                          cursor?.use {
+                              val idCol = it.getColumnIndex(MediaStore.Files.FileColumns._ID)
+                              val typeCol = it.getColumnIndex(MediaStore.Files.FileColumns.MEDIA_TYPE)
+                              val bucketIdCol = it.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_ID)
+                              val bucketNameCol = it.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
+                              val dateCol = it.getColumnIndex(MediaStore.Files.FileColumns.DATE_MODIFIED)
+                              val nameCol = it.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
+                              while (it.moveToNext()) {
+                                  val id = it.getLong(idCol)
+                                  val type = it.getInt(typeCol)
+                                  val bucketId = it.getLong(bucketIdCol)
+                                  val bucketName = it.getString(bucketNameCol) ?: "Camera"
+                                  val timestamp = it.getLong(dateCol)
+                                  val displayName = it.getString(nameCol) ?: ""
+                                  val uri = if (type == MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE) MediaStore.Images.Media.EXTERNAL_CONTENT_URI.buildUpon().appendPath(id.toString()).build().toString() else MediaStore.Video.Media.EXTERNAL_CONTENT_URI.buildUpon().appendPath(id.toString()).build().toString()
+                                  media.add(Media(uri = uri, isVideo = type == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO, bucketName = bucketName, bucketId = bucketId, timestamp = timestamp, displayName = displayName))
+                                  if (!albums.containsKey(bucketId)) albums[bucketId] = Album(bucketId = bucketId, bucketName = bucketName, thumbnailUri = uri, count = 1, lastModified = timestamp) else albums[bucketId] = albums[bucketId]!!.copy(count = albums[bucketId]!!.count + 1)
+                              }
                           }
                       }
                       mediaList = media
@@ -428,7 +422,7 @@ jobs:
                               Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
                                   if (screen == "GALLERY") AlbumFilterChips(currentMode = viewMode, onModeChange = { viewMode = it }, hazeState = hazeState, blurVal = blurVal, modifier = Modifier.align(Alignment.TopCenter).padding(top = 100.dp))
                                   when (screen) {
-                                      "GALLERY" -> { gridState = rememberLazyGridState(); GalleryGrid(mediaList = mediaList, hasPerm = hasPerm, hazeState = hazeState, gridState = gridState, viewMode = viewMode, albums = albumList, onMediaClick = { idx -> selIndex = idx; isFullScreen = true }) }
+                                      "GALLERY" -> { GalleryGrid(mediaList = mediaList, hasPerm = hasPerm, hazeState = hazeState, gridState = gridState, viewMode = viewMode, albums = albumList, onMediaClick = { idx -> selIndex = idx; isFullScreen = true }) }
                                       "EXPLORE" -> DummyScreen("EXPLORE", hazeState)
                                       "STUDIO" -> DummyScreen("AI STUDIO", hazeState)
                                       "VAULT" -> DummyScreen("VAULT", hazeState)
