@@ -1,4 +1,4 @@
-name: Aura Gallery (God Gemini V39 - The Boss Fight) 💀🔥
+name: Aura Gallery (The Come back V39.1 - The Surgical Strike) 💀
 
 on:
   push:
@@ -43,7 +43,7 @@ jobs:
 
           cat << 'EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
-          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "3.9" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
+          android { namespace = "com.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "3.9.1" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
           dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("androidx.compose.foundation:foundation"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0"); implementation("androidx.media3:media3-exoplayer:1.2.1"); implementation("androidx.media3:media3-ui:1.2.1") }
           EOF
 
@@ -68,7 +68,7 @@ jobs:
           <resources><string name="app_name">Aura Gallery</string></resources>
           EOF
 
-          # 🔥 FILE 1: MEDIA MODEL (FIXED PACKAGE) 🔥
+          # 🔥 FILE 1: MEDIA MODEL 🔥
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MediaModel.kt
           package com.aura.gallery
           data class Media(val uri: String, val isVideo: Boolean, val bucketName: String = "Camera", val bucketId: Long = 0L, val isFavorite: Boolean = false, val timestamp: Long = 0L, val displayName: String = "")
@@ -77,11 +77,12 @@ jobs:
           data class AppSettings(val blurLevel: Float = 30f, val isVaultEnabled: Boolean = false, val vaultPin: String = "")
           EOF
 
-          # 🔥 FILE 2: COMPONENTS (SMOOTH ZOOM, KSU BUTTON, MEDIA3 EXOPLAYER, FIXED PACKAGES) 🔥
+          # 🔥 FILE 2: COMPONENTS (SURGICAL FIXES APPLIED) 🔥
           cat << 'EOF' > app/src/main/java/com/aura/gallery/Components.kt
           @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
           package com.aura.gallery
 
+          import androidx.compose.animation.*
           import androidx.compose.animation.core.*
           import androidx.compose.foundation.*
           import androidx.compose.foundation.gestures.*
@@ -104,14 +105,14 @@ jobs:
           import androidx.compose.ui.text.TextStyle
           import androidx.compose.ui.text.font.FontWeight
           import androidx.compose.ui.unit.*
-          import coil.compose.AsyncImage
-          import coil.request.ImageRequest
           import androidx.compose.ui.viewinterop.AndroidView
           import androidx.lifecycle.Lifecycle
           import androidx.lifecycle.LifecycleEventObserver
-          import androidx.media3.exoplayer.ExoPlayer
           import androidx.media3.common.MediaItem
+          import androidx.media3.exoplayer.ExoPlayer
           import androidx.media3.ui.PlayerView
+          import coil.compose.AsyncImage
+          import coil.request.ImageRequest
           import dev.chrisbanes.haze.*
           import kotlinx.coroutines.launch
           import kotlin.math.abs
@@ -272,7 +273,7 @@ jobs:
                       val exoPlayer = remember { ExoPlayer.Builder(context).build().apply { setMediaItem(MediaItem.fromUri(media.uri)); prepare(); playWhenReady = true } }
                       val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
                       DisposableEffect(lifecycleOwner) {
-                          val observer = LifecycleEventObserver { _, event -> when (event) { Lifecycle.Event.ON_RESUME -> { exoPlayer.playWhenReady = true; exoPlayer.play() } Lifecycle.Event.ON_PAUSE -> { exoPlayer.pause(); exoPlayer.playWhenReady = false } Lifecycle.Event.ON_DESTROY -> { lifecycleOwner.lifecycle.removeObserver(this); exoPlayer.release() } else -> {} } }
+                          val observer = LifecycleEventObserver { _, event -> when (event) { Lifecycle.Event.ON_RESUME -> { exoPlayer.playWhenReady = true; exoPlayer.play() } Lifecycle.Event.ON_PAUSE -> { exoPlayer.pause(); exoPlayer.playWhenReady = false } Lifecycle.Event.ON_DESTROY -> { exoPlayer.release() } else -> {} } }
                           lifecycleOwner.lifecycle.addObserver(observer)
                           onDispose { lifecycleOwner.lifecycle.removeObserver(observer); exoPlayer.release() }
                       }
@@ -316,7 +317,7 @@ jobs:
           }
           EOF
 
-          # 🔥 FILE 3: MAIN ACTIVITY (FIXED PACKAGE AND IMPORTS) 🔥
+          # 🔥 FILE 3: MAIN ACTIVITY 🔥
           cat << 'EOF' > app/src/main/java/com/aura/gallery/MainActivity.kt
           package com.aura.gallery
 
@@ -346,6 +347,8 @@ jobs:
           import androidx.compose.ui.window.DialogProperties
           import androidx.core.content.ContextCompat
           import dev.chrisbanes.haze.HazeState
+          import kotlinx.coroutines.Dispatchers
+          import kotlinx.coroutines.withContext
 
           class MainActivity : ComponentActivity() {
               private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted -> updatePermissionStatus(isGranted) }
@@ -379,7 +382,32 @@ jobs:
 
               LaunchedEffect(hasPerm) {
                   if (hasPerm) {
-                      loadMediaAndAlbums(context) { media, albums -> mediaList = media; albumList = albums }
+                      withContext(Dispatchers.IO) {
+                          val media = mutableListOf<Media>()
+                          val albums = mutableMapOf<Long, Album>()
+                          val cursor = context.contentResolver.query(MediaStore.Files.getContentUri("external"), arrayOf(MediaStore.Files.FileColumns._ID, MediaStore.Files.FileColumns.DATA, MediaStore.Files.FileColumns.MEDIA_TYPE, MediaStore.Files.FileColumns.BUCKET_ID, MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME, MediaStore.Files.FileColumns.DATE_MODIFIED, MediaStore.Files.FileColumns.DISPLAY_NAME), "${MediaStore.Files.FileColumns.MEDIA_TYPE} = ? OR ${MediaStore.Files.FileColumns.MEDIA_TYPE} = ?", arrayOf(MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE.toString(), MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO.toString()), "${MediaStore.Files.FileColumns.DATE_MODIFIED} DESC")
+                          cursor?.use {
+                              val idCol = it.getColumnIndex(MediaStore.Files.FileColumns._ID)
+                              val typeCol = it.getColumnIndex(MediaStore.Files.FileColumns.MEDIA_TYPE)
+                              val bucketIdCol = it.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_ID)
+                              val bucketNameCol = it.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
+                              val dateCol = it.getColumnIndex(MediaStore.Files.FileColumns.DATE_MODIFIED)
+                              val nameCol = it.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
+                              while (it.moveToNext()) {
+                                  val id = it.getLong(idCol)
+                                  val type = it.getInt(typeCol)
+                                  val bucketId = it.getLong(bucketIdCol)
+                                  val bucketName = it.getString(bucketNameCol) ?: "Camera"
+                                  val timestamp = it.getLong(dateCol)
+                                  val displayName = it.getString(nameCol)
+                                  val uri = if (type == MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE) MediaStore.Images.Media.EXTERNAL_CONTENT_URI.buildUpon().appendPath(id.toString()).build().toString() else MediaStore.Video.Media.EXTERNAL_CONTENT_URI.buildUpon().appendPath(id.toString()).build().toString()
+                                  media.add(Media(uri = uri, isVideo = type == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO, bucketName = bucketName, bucketId = bucketId, timestamp = timestamp, displayName = displayName ?: ""))
+                                  if (!albums.containsKey(bucketId)) albums[bucketId] = Album(bucketId = bucketId, bucketName = bucketName, thumbnailUri = uri, count = 1, lastModified = timestamp) else albums[bucketId] = albums[bucketId]!!.copy(count = albums[bucketId]!!.count + 1)
+                              }
+                          }
+                          mediaList = media
+                          albumList = albums.values.toList()
+                      }
                   }
               }
 
@@ -416,32 +444,6 @@ jobs:
                       }
                   }
               }
-          }
-
-          fun loadMediaAndAlbums(context: android.content.Context, onLoaded: (List<Media>, List<Album>) -> Unit) {
-              val media = mutableListOf<Media>()
-              val albums = mutableMapOf<Long, Album>()
-              val cursor = context.contentResolver.query(MediaStore.Files.getContentUri("external"), arrayOf(MediaStore.Files.FileColumns._ID, MediaStore.Files.FileColumns.DATA, MediaStore.Files.FileColumns.MEDIA_TYPE, MediaStore.Files.FileColumns.BUCKET_ID, MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME, MediaStore.Files.FileColumns.DATE_MODIFIED, MediaStore.Files.FileColumns.DISPLAY_NAME), "${MediaStore.Files.FileColumns.MEDIA_TYPE} = ? OR ${MediaStore.Files.FileColumns.MEDIA_TYPE} = ?", arrayOf(MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE.toString(), MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO.toString()), "${MediaStore.Files.FileColumns.DATE_MODIFIED} DESC")
-              cursor?.use {
-                  val idCol = it.getColumnIndex(MediaStore.Files.FileColumns._ID)
-                  val typeCol = it.getColumnIndex(MediaStore.Files.FileColumns.MEDIA_TYPE)
-                  val bucketIdCol = it.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_ID)
-                  val bucketNameCol = it.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
-                  val dateCol = it.getColumnIndex(MediaStore.Files.FileColumns.DATE_MODIFIED)
-                  val nameCol = it.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
-                  while (it.moveToNext()) {
-                      val id = it.getLong(idCol)
-                      val type = it.getInt(typeCol)
-                      val bucketId = it.getLong(bucketIdCol)
-                      val bucketName = it.getString(bucketNameCol) ?: "Camera"
-                      val timestamp = it.getLong(dateCol)
-                      val displayName = it.getString(nameCol)
-                      val uri = if (type == MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE) MediaStore.Images.Media.EXTERNAL_CONTENT_URI.buildUpon().appendPath(id.toString()).build().toString() else MediaStore.Video.Media.EXTERNAL_CONTENT_URI.buildUpon().appendPath(id.toString()).build().toString()
-                      media.add(Media(uri = uri, isVideo = type == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO, bucketName = bucketName, bucketId = bucketId, timestamp = timestamp, displayName = displayName ?: ""))
-                      if (!albums.containsKey(bucketId)) albums[bucketId] = Album(bucketId = bucketId, bucketName = bucketName, thumbnailUri = uri, count = 1, lastModified = timestamp) else albums[bucketId] = albums[bucketId]!!.copy(count = albums[bucketId]!!.count + 1)
-                  }
-              }
-              onLoaded(media, albums.values.toList())
           }
 
           @Composable
