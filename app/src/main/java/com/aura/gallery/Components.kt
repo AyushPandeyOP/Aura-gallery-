@@ -6,6 +6,7 @@
 package com.aura.gallery
 
 import android.graphics.Bitmap
+import android.media.MediaMetadataRetriever
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
@@ -24,6 +25,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -32,6 +34,9 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.google.android.exoplayer2.ExoPlayer
@@ -39,9 +44,6 @@ import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.ui.PlayerView
 import dev.chrisbanes.haze.*
 import kotlinx.coroutines.launch
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -54,8 +56,11 @@ fun AdvancedLiquidBlur(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    // Dynamic blur based on scroll position
-    val animatedBlur by animateFloatAsState(blurVal, animationSpec = spring(dampingRatio = 0.8f), label = "blur")
+    val animatedBlur by animateFloatAsState(
+        blurVal,
+        animationSpec = spring(dampingRatio = 0.8f),
+        label = "blur"
+    )
     
     Box(modifier = modifier.haze(state = hazeState)) {
         content()
@@ -81,7 +86,7 @@ fun PandeyJiGlow() {
     )
 }
 
-// ==================== ADVANCED TOP BAR ====================
+// ==================== TOP BAR ====================
 
 @Composable
 fun TopBar(
@@ -211,7 +216,7 @@ fun AlbumFilterChips(
     }
 }
 
-// ==================== BOTTOM DOCK - PERFECTED ====================
+// ==================== BOTTOM DOCK ====================
 
 @Composable
 fun BottomDock(
@@ -250,7 +255,6 @@ fun BottomDock(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // PHOTOS BUTTON
             DockButton(
                 icon = Icons.Default.Image,
                 label = "Photos",
@@ -261,7 +265,6 @@ fun BottomDock(
                 }
             )
 
-            // EXPLORE BUTTON (Albums)
             DockButton(
                 icon = Icons.Default.Explore,
                 label = "Explore",
@@ -272,7 +275,6 @@ fun BottomDock(
                 }
             )
 
-            // AI STUDIO BUTTON
             DockButton(
                 icon = Icons.Default.AutoAwesome,
                 label = "Studio",
@@ -283,7 +285,6 @@ fun BottomDock(
                 }
             )
 
-            // VAULT BUTTON
             DockButton(
                 icon = Icons.Default.Lock,
                 label = "Vault",
@@ -313,8 +314,7 @@ fun DockButton(
 
     IconButton(
         onClick = onClick,
-        modifier = modifier
-            .graphicsLayer(scaleX = scale, scaleY = scale)
+        modifier = modifier.graphicsLayer(scaleX = scale, scaleY = scale)
     ) {
         Icon(
             icon,
@@ -338,7 +338,8 @@ fun SettingsHub(
             .fillMaxSize()
             .haze(state = hazeState)
             .padding(24.dp)
-            .padding(top = 110.dp, bottom = 100.dp),
+            .padding(top = 110.dp, bottom = 100.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -349,6 +350,8 @@ fun SettingsHub(
             letterSpacing = 2.sp
         )
         Spacer(Modifier.height(30.dp))
+        
+        // Blur Level Slider
         Text("Liquid Glass Blur Level: ${blurVal.toInt()}", color = Color.Gray)
         Slider(
             value = blurVal,
@@ -357,21 +360,63 @@ fun SettingsHub(
             colors = SliderDefaults.colors(
                 thumbColor = Color(0xFFFFD700),
                 activeTrackColor = Color(0xFFFFD700)
-            )
+            ),
+            modifier = Modifier.padding(horizontal = 24.dp)
         )
         Spacer(Modifier.height(20.dp))
+        
+        // PIN Setup Button
         Button(
             onClick = { },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
+                .height(50.dp)
+                .padding(horizontal = 16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF151515),
                 contentColor = Color.White
             )
         ) {
-            Text("Setup Secure Vault PIN", color = Color.White)
+            Text("Setup Secure Vault PIN", color = Color.White, fontSize = 16.sp)
         }
+        
+        Spacer(Modifier.height(20.dp))
+        
+        // Display Settings
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1a1a1a))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Display Options", color = Color.White, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(12.dp))
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Dark Mode", color = Color.White)
+                    Icon(Icons.Default.Check, null, tint = Color(0xFFFFD700))
+                }
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("HD Thumbnails", color = Color.White)
+                    Icon(Icons.Default.Check, null, tint = Color(0xFFFFD700))
+                }
+            }
+        }
+        
         Spacer(Modifier.weight(1f))
         PandeyJiGlow()
     }
@@ -431,7 +476,9 @@ fun GalleryGrid(
                                     Icons.Default.PlayArrow,
                                     null,
                                     tint = Color.White,
-                                    modifier = Modifier.size(26.dp).shadow(4.dp)
+                                    modifier = Modifier
+                                        .size(26.dp)
+                                        .shadow(4.dp)
                                 )
                             }
                         }
@@ -494,7 +541,9 @@ fun GalleryGrid(
                                 Icons.Default.Favorite,
                                 null,
                                 tint = Color(0xFFFFD700),
-                                modifier = Modifier.size(20.dp).shadow(4.dp)
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .shadow(4.dp)
                             )
                         }
                     }
@@ -568,7 +617,7 @@ fun MediaPagerScreen(
     }
 }
 
-// ==================== MEDIA VIEWER WITH OVERLAY ====================
+// ==================== MEDIA VIEWER WITH SMOOTH ZOOM + EXOPLAYER ====================
 
 @Composable
 fun MediaViewer(
@@ -580,12 +629,20 @@ fun MediaViewer(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
+    
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     var dragOffsetY by remember { mutableFloatStateOf(0f) }
-    val bgAlpha by animateFloatAsState(1f - (abs(dragOffsetY) / 800f).coerceIn(0f, 1f), label = "a")
+    val bgAlpha by animateFloatAsState(1f - (abs(dragOffsetY) / 800f).coerceIn(0f, 1f), label = "bgAlpha")
     var showOverlay by remember { mutableStateOf(true) }
     var isFavoritedLocal by remember { mutableStateOf(isFavorite) }
+
+    // SMOOTH ZOOM ANIMATION
+    val animatedScale by animateFloatAsState(
+        scale,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
+        label = "smoothZoom"
+    )
 
     Box(
         modifier = Modifier
@@ -594,12 +651,14 @@ fun MediaViewer(
             .pointerInput(Unit) {
                 detectTapGestures(
                     onDoubleTap = { tapOffset ->
-                        if (scale > 1f) {
-                            scale = 1f
-                            offset = Offset.Zero
-                        } else {
-                            scale = 3f
-                            offset = Offset.Zero
+                        scope.launch {
+                            if (scale > 1f) {
+                                scale = 1f
+                                offset = Offset.Zero
+                            } else {
+                                scale = 3f
+                                offset = Offset.Zero
+                            }
                         }
                     },
                     onTap = {
@@ -609,16 +668,18 @@ fun MediaViewer(
             }
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
-                    scale = (scale * zoom).coerceIn(1f, 5f)
-                    val maxX = (size.width * (scale - 1)) / 2f
-                    val maxY = (size.height * (scale - 1)) / 2f
-                    if (scale > 1f) {
-                        offset = Offset(
-                            (offset.x + pan.x).coerceIn(-maxX, maxX),
-                            (offset.y + pan.y).coerceIn(-maxY, maxY)
-                        )
-                    } else {
-                        offset = Offset.Zero
+                    scope.launch {
+                        scale = (scale * zoom).coerceIn(1f, 5f)
+                        val maxX = (size.width * (scale - 1)) / 2f
+                        val maxY = (size.height * (scale - 1)) / 2f
+                        if (scale > 1f) {
+                            offset = Offset(
+                                (offset.x + pan.x).coerceIn(-maxX, maxX),
+                                (offset.y + pan.y).coerceIn(-maxY, maxY)
+                            )
+                        } else {
+                            offset = Offset.Zero
+                        }
                     }
                 }
             }
@@ -647,9 +708,15 @@ fun MediaViewer(
         val mod = Modifier
             .fillMaxSize()
             .offset { IntOffset(0, dragOffsetY.roundToInt()) }
-            .graphicsLayer(scaleX = scale, scaleY = scale, translationX = offset.x, translationY = offset.y)
+            .graphicsLayer(
+                scaleX = animatedScale,
+                scaleY = animatedScale,
+                translationX = offset.x,
+                translationY = offset.y
+            )
 
         if (media.isVideo) {
+            // ==================== EXOPLAYER WITH LIFECYCLE FIX ====================
             val exoPlayer = remember {
                 ExoPlayer.Builder(context).build().apply {
                     setMediaItem(MediaItem.fromUri(media.uri))
@@ -662,8 +729,21 @@ fun MediaViewer(
 
             DisposableEffect(lifecycleOwner) {
                 val observer = LifecycleEventObserver { _, event ->
-                    if (event == Lifecycle.Event.ON_PAUSE) exoPlayer.pause()
-                    else if (event == Lifecycle.Event.ON_RESUME) exoPlayer.play()
+                    when (event) {
+                        Lifecycle.Event.ON_RESUME -> {
+                            exoPlayer.playWhenReady = true
+                            exoPlayer.play()
+                        }
+                        Lifecycle.Event.ON_PAUSE -> {
+                            exoPlayer.pause()
+                            exoPlayer.playWhenReady = false
+                        }
+                        Lifecycle.Event.ON_DESTROY -> {
+                            lifecycleOwner.lifecycle.removeObserver(this)
+                            exoPlayer.release()
+                        }
+                        else -> {}
+                    }
                 }
                 lifecycleOwner.lifecycle.addObserver(observer)
                 onDispose {
@@ -682,6 +762,7 @@ fun MediaViewer(
                 modifier = mod
             )
         } else {
+            // IMAGE VIEW
             AsyncImage(
                 model = ImageRequest.Builder(context).data(media.uri).crossfade(true).build(),
                 contentDescription = null,
@@ -739,7 +820,6 @@ fun MediaViewerOverlay(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // FAVORITE BUTTON
             IconButton(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -754,7 +834,6 @@ fun MediaViewerOverlay(
                 )
             }
 
-            // DELETE BUTTON
             IconButton(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -768,7 +847,6 @@ fun MediaViewerOverlay(
                 )
             }
 
-            // SHARE BUTTON
             IconButton(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -782,7 +860,6 @@ fun MediaViewerOverlay(
                 )
             }
 
-            // CLOSE BUTTON
             IconButton(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -797,6 +874,50 @@ fun MediaViewerOverlay(
                 )
             }
         }
+    }
+}
+
+// ==================== KSU STYLE FLOATING BUTTON ====================
+
+@Composable
+fun KSUStyleFloatingButton(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
+) {
+    val haptic = LocalHapticFeedback.current
+    val scale by animateFloatAsState(1f, label = "fabScale")
+
+    Box(
+        modifier = modifier
+            .size(60.dp)
+            .graphicsLayer(scaleX = scale, scaleY = scale)
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFFFFD700).copy(alpha = 0.8f),
+                        Color(0xFFFFD700).copy(alpha = 0.6f)
+                    )
+                )
+            )
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = Color(0xFFFFD700).copy(alpha = 0.4f),
+                spotColor = Color(0xFFFFD700).copy(alpha = 0.4f)
+            )
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            Icons.Default.Edit,
+            contentDescription = "Action",
+            tint = Color.Black,
+            modifier = Modifier.size(32.dp)
+        )
     }
 }
 
