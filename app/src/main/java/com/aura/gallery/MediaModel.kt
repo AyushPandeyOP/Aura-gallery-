@@ -1,4 +1,4 @@
-package com.aura.gallery
+package com.pnadeyJi.aura.gallery
 
 import android.net.Uri
 
