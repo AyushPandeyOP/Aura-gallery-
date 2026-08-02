@@ -25,3 +25,9 @@ enum class ViewMode {
     ALBUMS,
     FAVORITES
 }
+
+data class AppSettings(
+    val blurLevel: Float = 30f,
+    val isVaultEnabled: Boolean = false,
+    val vaultPin: String = ""
+)
