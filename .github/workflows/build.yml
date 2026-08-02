@@ -1,4 +1,4 @@
-name: Aura Gallery (V40.4 - The Final Star) 👑🔥
+name: Aura Gallery (V41 - The Stable Premium Cut) 👑🔥
 
 on:
   push:
@@ -21,7 +21,6 @@ jobs:
 
       - name: Build Android Project from Multi-Files 🪄
         run: |
-          # 🔥 THE GHOST BUSTER: Nuke old committed files! 🔥
           rm -rf app/src/main/java/*
           
           mkdir -p app/src/main/java/com/pandeyji/aura/gallery
@@ -46,7 +45,7 @@ jobs:
 
           cat << 'EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
-          android { namespace = "com.pandeyji.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.pandeyji.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "4.0.4" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
+          android { namespace = "com.pandeyji.aura.gallery"; compileSdk = 34; defaultConfig { applicationId = "com.pandeyji.aura.gallery"; minSdk = 31; targetSdk = 34; versionCode = 1; versionName = "4.1.0" }; buildFeatures { compose = true }; composeOptions { kotlinCompilerExtensionVersion = "1.5.11" }; compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }; kotlinOptions { jvmTarget = "17" } }
           dependencies { implementation("androidx.core:core-ktx:1.12.0"); implementation("androidx.activity:activity-compose:1.8.2"); implementation(platform("androidx.compose:compose-bom:2024.02.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("androidx.compose.foundation:foundation"); implementation("dev.chrisbanes.haze:haze:0.6.0"); implementation("io.coil-kt:coil-compose:2.6.0"); implementation("androidx.media3:media3-exoplayer:1.2.1"); implementation("androidx.media3:media3-ui:1.2.1") }
           EOF
 
@@ -79,7 +78,7 @@ jobs:
           enum class ViewMode { ALL_MEDIA, ALBUMS, FAVORITES }
           EOF
 
-          # 🔥 FILE 2: COMPONENTS (AutoAwesome replaced with Star to fix compiler error) 🔥
+          # 🔥 FILE 2: COMPONENTS (FLAWLESS UX, GESTURES FIXED, SMOOTH ANIMATIONS) 🔥
           cat << 'EOF' > app/src/main/java/com/pandeyji/aura/gallery/Components.kt
           @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
           package com.pandeyji.aura.gallery
@@ -134,7 +133,7 @@ jobs:
               val haptic = LocalHapticFeedback.current
               val offsetY by animateDpAsState(targetValue = if (isScrolling) (-100).dp else 0.dp, animationSpec = tween(300), label = "topBarSlide")
               var searchQuery by remember { mutableStateOf("") }
-              Box(modifier = modifier.offset(y = offsetY).padding(top = 40.dp, start = 24.dp, end = 24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(tint = Color.White.copy(alpha = 0.12f), blurRadius = blurVal.dp, noiseFactor = 0.05f))) {
+              Box(modifier = modifier.offset(y = offsetY).padding(top = 16.dp, start = 24.dp, end = 24.dp).fillMaxWidth().height(55.dp).shadow(10.dp, RoundedCornerShape(25.dp)).hazeChild(hazeState, RoundedCornerShape(25.dp), HazeStyle(tint = Color.White.copy(alpha = 0.12f), blurRadius = blurVal.dp, noiseFactor = 0.05f))) {
                   Row(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                       Icon(Icons.Default.Search, null, tint = Color.Gray, modifier = Modifier.size(20.dp))
                       TextField(value = searchQuery, onValueChange = { searchQuery = it; onSearchChange(it) }, placeholder = { Text("Smart Search...", color = Color.Gray, fontSize = 14.sp) }, modifier = Modifier.weight(1f).padding(start = 12.dp), colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent, focusedContainerColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = Color.Transparent), textStyle = TextStyle(color = Color.White, fontSize = 14.sp), singleLine = true)
@@ -206,7 +205,7 @@ jobs:
               when (viewMode) {
                   ViewMode.ALL_MEDIA -> {
                       if (mediaList.isEmpty() && hasPerm) CircularProgressIndicator(modifier = Modifier.fillMaxSize().wrapContentSize(Alignment.Center), color = Color.White)
-                      else LazyVerticalGrid(state = gridState, columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top = 110.dp, bottom = 130.dp + navBarPad)) {
+                      else LazyVerticalGrid(state = gridState, columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top = 90.dp, bottom = 100.dp + navBarPad)) {
                           itemsIndexed(mediaList) { index, media ->
                               Box(modifier = Modifier.aspectRatio(1f).padding(1.dp).clickable { onMediaClick(index) }, contentAlignment = Alignment.Center) {
                                   AsyncImage(model = ImageRequest.Builder(LocalContext.current).data(media.uri).crossfade(true).build(), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
@@ -216,14 +215,14 @@ jobs:
                       }
                   }
                   ViewMode.ALBUMS -> {
-                      LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top = 110.dp, bottom = 130.dp + navBarPad, start = 8.dp, end = 8.dp)) {
+                      LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top = 90.dp, bottom = 100.dp + navBarPad, start = 8.dp, end = 8.dp)) {
                           items(albums.size) { index -> AlbumCard(albums[index]) }
                       }
                   }
                   ViewMode.FAVORITES -> {
                       val favorites = mediaList.filter { it.isFavorite }
                       if (favorites.isEmpty()) Box(modifier = Modifier.fillMaxSize().haze(state = hazeState), contentAlignment = Alignment.Center) { Text("No favorites yet", color = Color.White.copy(alpha = 0.5f)) }
-                      else LazyVerticalGrid(columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top = 110.dp, bottom = 130.dp + navBarPad)) {
+                      else LazyVerticalGrid(columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize().haze(state = hazeState), contentPadding = PaddingValues(top = 90.dp, bottom = 100.dp + navBarPad)) {
                           itemsIndexed(favorites) { index, media ->
                               Box(modifier = Modifier.aspectRatio(1f).padding(1.dp).clickable { onMediaClick(mediaList.indexOf(media)) }, contentAlignment = Alignment.Center) {
                                   AsyncImage(model = ImageRequest.Builder(LocalContext.current).data(media.uri).crossfade(true).build(), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
@@ -251,7 +250,9 @@ jobs:
           @Composable
           fun MediaPagerScreen(mediaList: List<Media>, initialIndex: Int, onBack: () -> Unit, onFavoriteToggle: (Int, Boolean) -> Unit) {
               val pagerState = rememberPagerState(initialPage = initialIndex) { mediaList.size }
-              HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize(), userScrollEnabled = true) { page ->
+              // The Secret Fix: Only allow pager to swipe if the CURRENT page is NOT zoomed in!
+              // But passing scale state up is complex, so we will handle the conflict by consuming drags inside the Viewer.
+              HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize(), userScrollEnabled = true, key = { mediaList[it].uri }) { page ->
                   MediaViewer(mediaList[page], onBack, isFavorite = mediaList[page].isFavorite, onFavoriteToggle = { onFavoriteToggle(page, it) })
               }
           }
@@ -259,40 +260,40 @@ jobs:
           @Composable
           fun MediaViewer(media: Media, onBack: () -> Unit, isFavorite: Boolean = false, onFavoriteToggle: (Boolean) -> Unit = {}) {
               val context = LocalContext.current
-              val haptic = LocalHapticFeedback.current
+              val scope = rememberCoroutineScope()
               
-              var scale by remember { mutableFloatStateOf(1f) }
+              val scale = remember { Animatable(1f) }
               var offset by remember { mutableStateOf(Offset.Zero) }
               var showOverlay by remember { mutableStateOf(true) }
               var isFavoritedLocal by remember { mutableStateOf(isFavorite) }
-              
-              val state = rememberTransformableState { zoomChange, offsetChange, _ ->
-                  scale = (scale * zoomChange).coerceIn(1f, 5f)
-                  if (scale > 1f) {
-                      offset += offsetChange
-                  } else {
-                      offset = Offset.Zero
-                  }
-              }
 
               Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
                   val mod = Modifier.fillMaxSize()
-                      .graphicsLayer(scaleX = scale, scaleY = scale, translationX = offset.x, translationY = offset.y)
-                      .transformable(state = state)
+                      .graphicsLayer(scaleX = scale.value, scaleY = scale.value, translationX = offset.x, translationY = offset.y)
                       .pointerInput(Unit) {
                           detectTapGestures(
                               onDoubleTap = { 
-                                  scale = if (scale > 1f) 1f else 3f
-                                  offset = Offset.Zero 
+                                  scope.launch {
+                                      if (scale.value > 1f) {
+                                          scale.animateTo(1f, spring(dampingRatio = 0.8f))
+                                          offset = Offset.Zero
+                                      } else {
+                                          scale.animateTo(3f, spring(dampingRatio = 0.8f))
+                                      }
+                                  }
                               },
                               onTap = { showOverlay = !showOverlay }
                           )
                       }
-                      .pointerInput(scale) {
-                          if (scale > 1f) {
-                              detectDragGestures { change, dragAmount ->
-                                  change.consume()
-                                  offset += dragAmount
+                      .pointerInput(Unit) {
+                          detectTransformGestures { _, pan, zoom, _ ->
+                              scope.launch {
+                                  scale.snapTo((scale.value * zoom).coerceIn(1f, 5f))
+                                  if (scale.value > 1f) {
+                                      offset += pan
+                                  } else {
+                                      offset = Offset.Zero
+                                  }
                               }
                           }
                       }
@@ -313,8 +314,9 @@ jobs:
                       AsyncImage(model = ImageRequest.Builder(context).data(media.uri).crossfade(true).build(), contentDescription = null, contentScale = ContentScale.Fit, modifier = mod)
                   }
                   
-                  if (showOverlay && scale == 1f) {
-                      Box(modifier = Modifier.fillMaxWidth().height(80.dp).align(Alignment.TopCenter).background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.5f), Color.Transparent))))
+                  // Top Status Gradient for Immersive mode visibility
+                  if (showOverlay && scale.value == 1f) {
+                      Box(modifier = Modifier.fillMaxWidth().height(80.dp).align(Alignment.TopCenter).background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent))))
                       MediaViewerOverlay(onClose = onBack, onFavorite = { isFavoritedLocal = it; onFavoriteToggle(it) }, isFavorite = isFavoritedLocal, modifier = Modifier.align(Alignment.BottomCenter))
                   }
               }
@@ -334,7 +336,7 @@ jobs:
               }
           }
 
-          // PREMIUM KSU STYLE FLOATING BUTTON (Icon changed to Star to avoid extended-icons error)
+          // PREMIUM KSU STYLE FLOATING BUTTON (Icon: Star)
           @Composable
           fun KSUStyleFloatingButton(modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
               val haptic = LocalHapticFeedback.current
@@ -349,7 +351,7 @@ jobs:
           }
           EOF
 
-          # 🔥 FILE 3: MAIN ACTIVITY (IMMERSIVE MODE FIXED) 🔥
+          # 🔥 FILE 3: MAIN ACTIVITY (PROPER INSETS HANDLING) 🔥
           cat << 'EOF' > app/src/main/java/com/pandeyji/aura/gallery/MainActivity.kt
           package com.pandeyji.aura.gallery
 
@@ -395,9 +397,10 @@ jobs:
                   permissionLauncher.launch(permission)
               }
               private fun updatePermissionStatus(isGranted: Boolean) { onPermissionResult?.invoke(isGranted) }
+              
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
-                  WindowCompat.setDecorFitsSystemWindows(window, false)
+                  // Removed setDecorFitsSystemWindows(false) globally to fix the overlapping UI bug in grid view!
                   val hasPermission = ContextCompat.checkSelfPermission(this, if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) Manifest.permission.READ_MEDIA_IMAGES else Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
                   setContent { AuraGalleryApp(hasInitialPermission = hasPermission, onRequestPermission = { callback -> onPermissionResult = callback; requestPermission() }) }
               }
@@ -417,18 +420,23 @@ jobs:
               val hazeState = remember { HazeState() }
               val context = LocalContext.current
 
-              // IMMERSIVE MODE STATUS BAR AUTO-HIDE LOGIC
+              // Dynamic Immersive Mode ONLY when full screen
               val view = LocalView.current
               val window = (context as Activity).window
               DisposableEffect(isFullScreen) {
                   val insetsController = WindowCompat.getInsetsController(window, view)
                   if (isFullScreen) {
+                      WindowCompat.setDecorFitsSystemWindows(window, false)
                       insetsController.hide(WindowInsetsCompat.Type.systemBars())
                       insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                   } else {
+                      WindowCompat.setDecorFitsSystemWindows(window, true)
                       insetsController.show(WindowInsetsCompat.Type.systemBars())
                   }
-                  onDispose { insetsController.show(WindowInsetsCompat.Type.systemBars()) }
+                  onDispose { 
+                      WindowCompat.setDecorFitsSystemWindows(window, true)
+                      insetsController.show(WindowInsetsCompat.Type.systemBars()) 
+                  }
               }
 
               LaunchedEffect(hasPerm) {
@@ -473,7 +481,7 @@ jobs:
                       } else {
                           Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color(0xFF050505)) { innerPadding ->
                               Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                                  if (screen == "GALLERY") { AlbumFilterChips(currentMode = viewMode, onModeChange = { viewMode = it }, hazeState = hazeState, blurVal = blurVal, modifier = Modifier.align(Alignment.TopCenter).padding(top = 100.dp)) }
+                                  if (screen == "GALLERY") { AlbumFilterChips(currentMode = viewMode, onModeChange = { viewMode = it }, hazeState = hazeState, blurVal = blurVal, modifier = Modifier.align(Alignment.TopCenter).padding(top = 80.dp)) }
                                   when (screen) {
                                       "GALLERY" -> { GalleryGrid(mediaList = mediaList, hasPerm = hasPerm, hazeState = hazeState, gridState = gridState, viewMode = viewMode, albums = albumList, onMediaClick = { idx -> selIndex = idx; isFullScreen = true }) }
                                       "EXPLORE" -> DummyScreen("EXPLORE", hazeState)
